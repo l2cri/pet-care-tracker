@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 - [ ] Vite + React + TypeScript проект собирается, dev-сервер запускается
 - [ ] Vitest настроен и гоняется в CI (хотя бы один smoke-тест)
