@@ -1,5 +1,7 @@
 # CI «Питомцы и дом»: тесты и сборка на каждый пуш в ветки и master,
-# публикация GitHub Pages из master (ADR-0007, ADR-0009)
+# публикация GitHub Pages из master (ADR-0007, ADR-0009).
+# Экшены — актуальные мажоры (рантайм Node 24): без этого GitHub принудительно
+# гоняет node20-экшены на Node 24 и сыплет deprecation-предупреждения.
 name: CI
 
 on:
@@ -14,8 +16,8 @@ jobs:
     name: Vitest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -26,14 +28,14 @@ jobs:
     name: Сборка
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
@@ -51,13 +53,13 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
-      - uses: actions/configure-pages@v4
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
