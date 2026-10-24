@@ -2,9 +2,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// base — под-path проектного сайта GitHub Pages (ADR-0007)
+// GitHub Pages отдаёт сайт из подкаталога /<repo>/ — база выводится из имени
+// репозитория, которое Actions выставляет в GITHUB_REPOSITORY; локально — корень.
+const base = process.env.GITHUB_REPOSITORY
+  ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/`
+  : '/'
+
 export default defineConfig({
-  base: '/pet-care-tracker/',
+  base,
   plugins: [react()],
   test: {
     environment: 'jsdom',
