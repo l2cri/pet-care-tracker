@@ -13,43 +13,11 @@ import { useState } from 'react'
 import type { FormEvent, ReactElement } from 'react'
 import type { CareSubject, IntervalUnit } from '../../../domain/model'
 import { presetCareItemDrafts } from '../../../domain/presets'
+import { intervalLabel, UNIT_OPTIONS } from '../format'
 import { useStore } from '../../store'
 import { BottomSheet } from '../BottomSheet/BottomSheet'
 import { PhotoInput } from '../PhotoInput/PhotoInput'
 import styles from './SubjectSheet.module.css'
-
-/** Единицы интервала для select: значение — IntervalUnit, подпись — русский родительный множественного. */
-const UNIT_OPTIONS: { value: IntervalUnit; label: string }[] = [
-  { value: 'days', label: 'дней' },
-  { value: 'weeks', label: 'недель' },
-  { value: 'months', label: 'месяцев' },
-  { value: 'years', label: 'лет' },
-]
-
-/** Формы слов единицы: род для «каждый/каждую» плюс три формы числительного. */
-const UNIT_WORD_FORMS: Record<IntervalUnit, { every: string; one: string; few: string; many: string }> = {
-  days: { every: 'каждый', one: 'день', few: 'дня', many: 'дней' },
-  weeks: { every: 'каждую', one: 'неделю', few: 'недели', many: 'недель' },
-  months: { every: 'каждый', one: 'месяц', few: 'месяца', many: 'месяцев' },
-  years: { every: 'каждый', one: 'год', few: 'года', many: 'лет' },
-}
-
-/** Русское согласование числительного: 1 месяц / 2 месяца / 5 месяцев. */
-function pluralWord(value: number, forms: { one: string; few: string; many: string }): string {
-  const mod10 = value % 10
-  const mod100 = value % 100
-  if (mod10 === 1 && mod100 !== 11) return forms.one
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return forms.few
-  return forms.many
-}
-
-/** Подпись интервала для человека: «каждый месяц», «каждые 3 месяца», «каждые 2 недели». */
-function intervalLabel(value: number, unit: IntervalUnit): string {
-  const forms = UNIT_WORD_FORMS[unit]
-  // По-русски не говорят «каждый 1 месяц» — числительное опускается.
-  if (value === 1) return `${forms.every} ${forms.one}`
-  return `каждые ${value} ${pluralWord(value, forms)}`
-}
 
 /**
  * Строка редактирования пункта ухода. Число интервала держим строкой, пока
