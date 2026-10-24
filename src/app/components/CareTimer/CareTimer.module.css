@@ -1,0 +1,36 @@
+/* Таймер — короткая колонка текста: строка срочности и, в подробном
+   варианте, дата следующего раза под ней. */
+
+.timer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.line {
+  margin: 0;
+  font-size: var(--font-size-m);
+  font-weight: 600;
+  line-height: var(--line-height);
+}
+
+/* Цвета — только токены срочности; calm сознательно не зелёный и не
+   жёлтый: спокойному пункту нечего кричать. */
+.overdue {
+  color: var(--color-urgency-overdue);
+}
+
+.soon {
+  color: var(--color-urgency-soon);
+}
+
+.calm {
+  color: var(--color-text-muted);
+}
+
+.next {
+  margin: 0;
+  font-size: var(--font-size-s);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
