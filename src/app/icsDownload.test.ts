@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { CareItem } from '../domain/model'
-import { calendarStart, downloadCareItemCalendar, icsFileName, utcStamp } from './icsDownload'
+import type { CareItem, OneOffEvent } from '../domain/model'
+import {
+  calendarStart,
+  downloadCareItemCalendar,
+  downloadOneOffEventCalendar,
+  icsFileName,
+  utcStamp,
+} from './icsDownload'
 
 /**
  * Чистая часть хелпера (имя файла, DTSTAMP, выбор старта) — детерминированные
@@ -11,6 +17,56 @@ import { calendarStart, downloadCareItemCalendar, icsFileName, utcStamp } from '
 /** Пункт ухода «Прививка» Барсика — как в эталонах domain/ics.test.ts. */
 function vaccine(): CareItem {
   return { id: 'care-1', subjectId: 'subject-1', title: 'Прививка', interval: { value: 12, unit: 'months' } }
+}
+
+/** Разовое событие «Визит к ветеринару» Барсика 5 ноября (тикет 07). */
+function vetVisit(): OneOffEvent {
+  return { id: 'event-1', subjectId: 'subject-1', title: 'Визит к ветеринару', date: '2026-11-05', done: false }
+}
+
+// jsdom не реализует createObjectURL/revokeObjectURL — подменяем на
+// записывающие заглушки и возвращаем оригиналы после каждого теста.
+const originalCreateObjectURL = URL.createObjectURL
+const originalRevokeObjectURL = URL.revokeObjectURL
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  Object.defineProperty(URL, 'createObjectURL', {
+    value: originalCreateObjectURL,
+    writable: true,
+    configurable: true,
+  })
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    value: originalRevokeObjectURL,
+    writable: true,
+    configurable: true,
+  })
+})
+
+/** Заглушки скачивания: собирают Blob, кликнутую ссылку и отозванные URL. */
+function stubDownload(): { blobs: Blob[]; clicked: HTMLAnchorElement[]; revoked: string[] } {
+  const blobs: Blob[] = []
+  const clicked: HTMLAnchorElement[] = []
+  const revoked: string[] = []
+  Object.defineProperty(URL, 'createObjectURL', {
+    value: (blob: Blob): string => {
+      blobs.push(blob)
+      return 'blob:ics-stub'
+    },
+    writable: true,
+    configurable: true,
+  })
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    value: (url: string): void => {
+      revoked.push(url)
+    },
+    writable: true,
+    configurable: true,
+  })
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+    clicked.push(this)
+  })
+  return { blobs, clicked, revoked }
 }
 
 describe('icsFileName: «пункт — питомец.ics»', () => {
@@ -44,51 +100,6 @@ describe('calendarStart: старт события', () => {
 })
 
 describe('downloadCareItemCalendar: Blob-обёртка (jsdom)', () => {
-  // jsdom не реализует createObjectURL/revokeObjectURL — подменяем на
-  // записывающие заглушки и возвращаем оригиналы после каждого теста.
-  const originalCreateObjectURL = URL.createObjectURL
-  const originalRevokeObjectURL = URL.revokeObjectURL
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    Object.defineProperty(URL, 'createObjectURL', {
-      value: originalCreateObjectURL,
-      writable: true,
-      configurable: true,
-    })
-    Object.defineProperty(URL, 'revokeObjectURL', {
-      value: originalRevokeObjectURL,
-      writable: true,
-      configurable: true,
-    })
-  })
-
-  /** Заглушки скачивания: собирают Blob, кликнутую ссылку и отозванные URL. */
-  function stubDownload(): { blobs: Blob[]; clicked: HTMLAnchorElement[]; revoked: string[] } {
-    const blobs: Blob[] = []
-    const clicked: HTMLAnchorElement[] = []
-    const revoked: string[] = []
-    Object.defineProperty(URL, 'createObjectURL', {
-      value: (blob: Blob): string => {
-        blobs.push(blob)
-        return 'blob:ics-stub'
-      },
-      writable: true,
-      configurable: true,
-    })
-    Object.defineProperty(URL, 'revokeObjectURL', {
-      value: (url: string): void => {
-        revoked.push(url)
-      },
-      writable: true,
-      configurable: true,
-    })
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      clicked.push(this)
-    })
-    return { blobs, clicked, revoked }
-  }
-
   it('кликает ссылку с download «Прививка — Барсик.ics» и VCALENDAR из ядра', async () => {
     const { blobs, clicked, revoked } = stubDownload()
 
@@ -122,5 +133,28 @@ describe('downloadCareItemCalendar: Blob-обёртка (jsdom)', () => {
     downloadCareItemCalendar({ item: vaccine(), subjectName: 'Барсик', nextDue: null, today: '2026-10-25' })
 
     expect(await blobs[0].text()).toContain('DTSTART;VALUE=DATE:20261025')
+  })
+})
+
+describe('downloadOneOffEventCalendar: Blob-обёртка события (jsdom, тикет 07)', () => {
+  it('скачивает одиночный VEVENT «Визит к ветеринару — Барсик.ics» без RRULE', async () => {
+    const { blobs, clicked, revoked } = stubDownload()
+
+    downloadOneOffEventCalendar({ event: vetVisit(), subjectName: 'Барсик' })
+
+    expect(blobs).toHaveLength(1)
+    expect(blobs[0].type).toBe('text/calendar;charset=utf-8')
+    const text = await blobs[0].text()
+    // DTSTART — дата события, повтора нет, будильник за сутки на месте.
+    expect(text).toContain('DTSTART;VALUE=DATE:20261105')
+    expect(text).not.toContain('RRULE')
+    expect(text).toContain('TRIGGER:-P1D')
+    expect(text).toContain('SUMMARY:Визит к ветеринару — Барсик')
+    // Финальный CRLF обязателен по RFC 5545 §3.4.
+    expect(text.endsWith('END:VCALENDAR\r\n')).toBe(true)
+
+    expect(clicked).toHaveLength(1)
+    expect(clicked[0].download).toBe('Визит к ветеринару — Барсик.ics')
+    expect(revoked).toEqual(['blob:ics-stub'])
   })
 })

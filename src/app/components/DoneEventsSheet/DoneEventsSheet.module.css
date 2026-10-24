@@ -1,0 +1,43 @@
+/* Выполненные события — лента фактов, как история выполнений пункта:
+   дата и заголовок, заметка приглушённой строкой. Прошлое уже не срочно —
+   без бейджей и цветов. */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+.date {
+  font-weight: 600;
+}
+
+.title {
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+}
+
+.note {
+  font-size: var(--font-size-s);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}

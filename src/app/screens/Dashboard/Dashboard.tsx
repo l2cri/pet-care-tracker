@@ -2,8 +2,9 @@
  * Дашборд (User Stories 1, 12, 13, 26, 27, 33, 37): первый экран с карточками
  * всех подопечных и общим списком дел. Карточка — точка входа в «Карточку
  * питомца» (тикет 05); бейдж на карточке — самый срочный пункт подопечного
- * (mostUrgent), общий список — просроченное и «скоро» по всем подопечным,
- * отсортированные доменной сортировкой.
+ * (mostUrgent). Общий список — просроченное и «скоро» по всем подопечным:
+ * пункты ухода и разовые события в одном порядке (тикет 07), который даёт
+ * доменная сортировка dashboardTodoList.
  *
  * Данные — только из стора; какое окно (создание, правка, подтверждение
  * удаления) открыто — локальное UI-состояние экрана, стор про него не знает.
@@ -13,11 +14,13 @@
 import { useState } from 'react'
 import type { ReactElement } from 'react'
 import type { CareSubject, Id } from '../../../domain/model'
-import { mostUrgent, sortTodoList, withUrgency } from '../../../domain/urgency'
+import { daysUntil } from '../../../domain/dates'
+import { dashboardTodoList, mostUrgent } from '../../../domain/urgency'
 import { BottomSheet } from '../../components/BottomSheet/BottomSheet'
 import { CareTimer } from '../../components/CareTimer/CareTimer'
 import { SubjectSheet } from '../../components/SubjectSheet/SubjectSheet'
 import { UrgencyBadge } from '../../components/UrgencyBadge/UrgencyBadge'
+import { timerTextShort } from '../../components/format'
 import { todayDateString } from '../../today'
 import { useStore } from '../../store'
 import styles from './Dashboard.module.css'
@@ -39,10 +42,13 @@ export function Dashboard(props: DashboardProps): ReactElement {
   // «Сегодня» — один раз на рендер экрана: бейджи и список одного кадра согласованы.
   const today = todayDateString()
 
-  // Общий список дел (User Story 12): просроченное и «скоро» по всем
-  // подопечным; порядок даёт доменная сортировка (срочность, внутри — дата).
-  const todoList = sortTodoList(
-    withUrgency(state.careItems, state.completionLog, today),
+  // Общий список дел (User Story 12, тикет 07): просроченное и «скоро» по
+  // всем подопечным — пункты ухода и разовые события в одном порядке
+  // (срочность, внутри — дата), который даёт доменная сортировка.
+  const todoList = dashboardTodoList(
+    state.careItems,
+    state.completionLog,
+    state.oneOffEvents,
     today,
   ).filter((entry) => entry.urgency !== 'calm')
   const subjectName = new Map(subjects.map((subject) => [subject.id, subject.name]))
@@ -136,20 +142,40 @@ export function Dashboard(props: DashboardProps): ReactElement {
           <section className={styles.todo}>
             <h2 className={styles.todoTitle}>Просрочено и скоро</h2>
             <ul className={styles.todoList}>
-              {todoList.map((due) => (
-                <li key={due.item.id}>
+              {todoList.map((entry) => (
+                <li key={entry.kind === 'careItem' ? entry.item.id : entry.event.id}>
                   <button
                     type="button"
                     className={styles.todoRow}
-                    onClick={() => onOpenSubject(due.item.subjectId)}
+                    onClick={() =>
+                      onOpenSubject(
+                        entry.kind === 'careItem' ? entry.item.subjectId : entry.event.subjectId,
+                      )
+                    }
                   >
                     <span className={styles.todoMeta}>
-                      <span className={styles.todoItem}>{due.item.title}</span>
+                      <span className={styles.todoItem}>
+                        {entry.kind === 'careItem' ? entry.item.title : entry.event.title}
+                      </span>
                       <span className={styles.todoSubject}>
-                        {subjectName.get(due.item.subjectId) ?? ''}
+                        {subjectName.get(
+                          entry.kind === 'careItem' ? entry.item.subjectId : entry.event.subjectId,
+                        ) ?? ''}
                       </span>
                     </span>
-                    <CareTimer today={today} due={due} short />
+                    {entry.kind === 'careItem' ? (
+                      <CareTimer
+                        today={today}
+                        due={{ item: entry.item, nextDue: entry.nextDue, urgency: entry.urgency }}
+                        short
+                      />
+                    ) : (
+                      /* Короткий таймер события — тот же текст и цвет, что у
+                          пунктов; дни до даты считает домен. */
+                      <span className={`${styles.todoTimer} ${styles[entry.urgency]}`}>
+                        {timerTextShort(daysUntil(today, entry.event.date))}
+                      </span>
+                    )}
                   </button>
                 </li>
               ))}

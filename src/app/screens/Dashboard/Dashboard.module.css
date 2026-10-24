@@ -227,6 +227,26 @@
   color: var(--color-text-muted);
 }
 
+/* Короткий таймер события в строке дела — тот же размер и токены срочности,
+   что у CareTimer, без отдельного компонента. */
+.todoTimer {
+  flex: none;
+  font-size: var(--font-size-m);
+  font-weight: 600;
+}
+
+.todoTimer.overdue {
+  color: var(--color-urgency-overdue);
+}
+
+.todoTimer.soon {
+  color: var(--color-urgency-soon);
+}
+
+.todoTimer.calm {
+  color: var(--color-text-muted);
+}
+
 /* FAB: фиксированная точка входа «добавить», контраст на обеих темах
    дают токены accent/on-accent. */
 .fab {
