@@ -132,9 +132,8 @@ git branch -d t/06-ics-export
 - [ ] Settings → Branches: защита master от прямых пушей (нужен PR); Merge-метод —
       только «Squash and merge» (Allow squash merging оставляем, merge commit и
       rebase можно выключить)
-- [ ] Settings → Pages: Source → GitHub Actions (без этого job pages из тикета 01
-      не опубликует сайт)
-- [ ] CI (GitHub Actions: npm ci + vitest + Pages) — это тикет 01
+- [x] Settings → Pages: Source → GitHub Actions (включено через API: build_type=workflow)
+- [x] CI (GitHub Actions: npm ci + vitest + Pages) — это тикет 01
 
 ## Известные трения (и почему это ок)
 
