@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { AppState, CareSubject } from '../domain/model'
 import type { CareItemDraft } from '../domain/presets'
 import { emptyAppState, InMemoryRepository } from '../storage/repository'
@@ -260,5 +260,35 @@ describe('Стор подопечных', () => {
     }
 
     expect(() => render(<Outside />)).toThrow(/StoreProvider/)
+  })
+})
+
+describe('useAutoSave: отказ хранилища', () => {
+  it('ошибка сохранения не роняет приложение — экран продолжает работать', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // Методы лежат на прототипе класса — спрэд экземпляра их потеряет,
+    // поэтому репозиторий с падающим save собираем явно.
+    const memory = new InMemoryRepository()
+    const failing: Repository = {
+      load: () => memory.load(),
+      save: () => {
+        throw new Error('QuotaExceededError')
+      },
+      wipe: () => memory.wipe(),
+    }
+
+    render(
+      <StoreProvider repository={failing}>
+        <SubjectProbe />
+      </StoreProvider>,
+    )
+
+    // save падает и на первом рендере, и после клика — но подопечный создан
+    // в состоянии и экран жив: потеря персистентности не убивает интерфейс.
+    fireEvent.click(screen.getByRole('button', { name: 'создать без пунктов ухода' }))
+    const created = JSON.parse(screen.getByTestId('created').textContent ?? '') as CareSubject
+    expect(created.name).toBe('Тишка')
+    expect(consoleError).toHaveBeenCalled()
+    consoleError.mockRestore()
   })
 })
