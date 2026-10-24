@@ -19,11 +19,14 @@
   line-height: var(--line-height);
 }
 
+/* Запас снизу больше обычного: над жестовой полоской парит FAB,
+   последняя карточка не должна прятаться под ним. */
 .content {
   flex: 1;
-  padding: var(--space-4) var(--space-4) calc(var(--safe-bottom) + var(--space-4));
+  padding: var(--space-4) var(--space-4) calc(var(--safe-bottom) + 96px);
 }
 
+/* Пустое состояние */
 .empty {
   padding: var(--space-6) var(--space-4);
   border: 1px dashed var(--color-border);
@@ -38,12 +41,167 @@
 
 .emptyText {
   max-width: 34ch;
-  margin: 0 auto var(--space-2);
+  margin: 0 auto var(--space-4);
   font-size: var(--font-size-m);
   line-height: var(--line-height);
   color: var(--color-text-muted);
 }
 
-.emptyText:last-child {
-  margin-bottom: 0;
+.emptyButton {
+  min-height: 48px;
+  padding: 0 var(--space-6);
+  border: none;
+  border-radius: var(--radius-m);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Карточки: на телефоне — список, от 640px — сетка auto-fill. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-4);
+  }
+}
+
+.card {
+  padding: var(--space-4);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+.cardMain {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.avatar,
+.avatarPlaceholder {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+}
+
+.avatar {
+  object-fit: cover;
+}
+
+.avatarPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-l);
+}
+
+.name {
+  margin: 0;
+  font-size: var(--font-size-l);
+  line-height: var(--line-height);
+}
+
+.species {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.cardActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.cardButton {
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-s);
+  cursor: pointer;
+}
+
+/* Удаление на карточке — только намёк цветом; залитая красная кнопка
+   остаётся подтверждению в bottom-sheet. */
+.cardButtonDanger {
+  color: var(--color-danger);
+}
+
+/* FAB: фиксированная точка входа «добавить», контраст на обеих темах
+   дают токены accent/on-accent. */
+.fab {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--safe-bottom) + var(--space-4));
+  z-index: 10;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: inherit;
+  font-size: var(--font-size-xl);
+  line-height: 1;
+  box-shadow: var(--shadow-fab);
+  cursor: pointer;
+}
+
+/* Подтверждение удаления */
+.removingText {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+}
+
+.removingActions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.removingActions .secondaryButton,
+.removingActions .dangerButton {
+  flex: 1;
+  min-height: 48px;
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondaryButton {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-weight: 400;
+}
+
+.dangerButton {
+  border: none;
+  background: var(--color-danger);
+  color: var(--color-on-danger);
 }

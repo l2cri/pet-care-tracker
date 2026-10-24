@@ -18,6 +18,11 @@ body {
 }
 
 :root {
+  /* Нативные контролы (календарь у input[type=date], select, скроллбары)
+     красит ОС по color-scheme. Без него в тёмной теме они остались бы
+     белыми — «белое пятно», запрещённое ADR-0006. */
+  color-scheme: light dark;
+
   /* Палитра: светлая тема */
   --color-bg: #f6f8f4;
   --color-card: #ffffff;
@@ -29,6 +34,18 @@ body {
   /* Срочность дашборда (тикет 05): просрочено / скоро (≤ 7 дней) */
   --color-urgency-overdue: #c0392b;
   --color-urgency-soon: #b07d10;
+  /* Опасное действие (удаление питомца). Отдельный токен от urgency-overdue:
+     срочность — статус пункта ухода, danger — действие пользователя;
+     значения совпадают намеренно, расходиться им никто не запрещал. */
+  --color-danger: #c0392b;
+  --color-on-danger: #ffffff;
+  /* Затемнение под bottom-sheet: зелёно-серый в тон палитре, а не чистый чёрный */
+  --color-scrim: rgb(15 23 18 / 0.55);
+
+  /* Тени «парящих» элементов: FAB над контентом и bottom-sheet над экраном.
+     В тёмной теме тень глубже — иначе лист сливается с фоном. */
+  --shadow-fab: 0 4px 12px rgb(20 32 23 / 0.25);
+  --shadow-sheet: 0 -8px 24px rgb(20 32 23 / 0.2);
 
   /* Радиусы */
   --radius-s: 8px;
@@ -66,5 +83,10 @@ body {
     --color-border: #2a372e;
     --color-urgency-overdue: #e07070;
     --color-urgency-soon: #d9a949;
+    --color-danger: #e07070;
+    --color-on-danger: #1c110f;
+    --color-scrim: rgb(0 0 0 / 0.6);
+    --shadow-fab: 0 4px 16px rgb(0 0 0 / 0.5);
+    --shadow-sheet: 0 -8px 28px rgb(0 0 0 / 0.45);
   }
 }

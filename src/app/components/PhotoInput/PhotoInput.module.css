@@ -1,0 +1,64 @@
+/* Скрытый file input: display:none — стандартный приём, программный click()
+   из кнопки открывает выбор файла во всех целевых браузерах, включая iOS. */
+.fileInput {
+  display: none;
+}
+
+.photoInput {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Круглое превью 72px — крупная touch-зона; фото вписывается обрезкой. */
+.preview {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px dashed var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg);
+  cursor: pointer;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.placeholder {
+  font-size: var(--font-size-xl);
+  line-height: 1;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--font-size-s);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+.remove {
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-danger);
+  font: inherit;
+  font-size: var(--font-size-s);
+  cursor: pointer;
+  text-decoration: underline;
+}

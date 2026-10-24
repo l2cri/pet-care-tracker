@@ -1,0 +1,153 @@
+/* Форма — вертикальный стек полей: мобильный-first, одно поле на строку,
+   до кнопок дотягивается большой палец. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-family: var(--font-family);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
+}
+
+/* 44px высоты — touch-friendly; фон поля чуть темнее панели, чтобы
+   input читался на карточке в обеих темах. */
+.input {
+  min-height: 44px;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-s);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.inputInvalid {
+  border-color: var(--color-danger);
+}
+
+.error {
+  font-size: var(--font-size-s);
+  color: var(--color-danger);
+}
+
+/* Секция «Пункты ухода»: только созданию, т.к. правка набора живого
+   питомца — тикет 05. */
+.care {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.careTitle {
+  margin: 0;
+  font-size: var(--font-size-m);
+}
+
+.careHint,
+.careEmpty {
+  margin: 0;
+  font-size: var(--font-size-s);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+.careList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Строка пункта — мини-карточка: заголовок, интервал, итоговая подпись. */
+.careRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+.careRowTop {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.careRemove {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-m);
+  cursor: pointer;
+}
+
+.careInterval {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.every {
+  flex: none;
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
+}
+
+.careValue {
+  width: 76px;
+  flex: none;
+}
+
+.careSummary {
+  margin: 0;
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+/* Кнопки одинаковой высоты 48px, каждая тянется на половину ряда. */
+.primary,
+.secondary {
+  flex: 1;
+  min-height: 48px;
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.secondary {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-weight: 400;
+}
