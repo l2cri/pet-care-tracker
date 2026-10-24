@@ -84,10 +84,35 @@
   border-radius: var(--radius-m);
 }
 
+/* Основная область карточки — кнопка в «Карточку питомца»: сброс кнопки
+   до невидимого контейнера, стиль карточки остаётся на .card. Курсор и
+   шеврон подсказывают переход; текст слева, как в остальном приложении. */
 .cardMain {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: var(--space-3);
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.chevron {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-l);
 }
 
 .avatar,
@@ -146,6 +171,60 @@
    остаётся подтверждению в bottom-sheet. */
 .cardButtonDanger {
   color: var(--color-danger);
+}
+
+/* Общий список дел «Просрочено и скоро» (User Story 12): после карточек,
+   отдельной секцией — с воздуха сверху, чтобы не сливаться с сеткой. */
+.todo {
+  margin-top: var(--space-6);
+}
+
+.todoTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-l);
+}
+
+.todoList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Строка дела — кнопка в карточку питомца: слева пункт и его хозяин,
+   справа короткий таймер цветом срочности. */
+.todoRow {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  background: var(--color-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.todoMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.todoItem {
+  font-weight: 600;
+}
+
+.todoSubject {
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
 }
 
 /* FAB: фиксированная точка входа «добавить», контраст на обеих темах

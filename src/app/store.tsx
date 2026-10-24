@@ -13,7 +13,15 @@
 
 import { createContext, useContext, useEffect, useMemo, useReducer } from 'react'
 import type { ReactElement, ReactNode } from 'react'
-import type { AppState, CareItem, CareSubject, DateString, Id } from '../domain/model'
+import type {
+  AppState,
+  CareItem,
+  CareSubject,
+  CompletionLogEntry,
+  DateString,
+  Id,
+  Interval,
+} from '../domain/model'
 import type { CareItemDraft } from '../domain/presets'
 import type { Repository } from '../storage/repository'
 
@@ -48,6 +56,12 @@ export type SubjectPatch = {
   photo?: string | null
 }
 
+/** Частичный апдейт пункта ухода: применяются только переданные поля. */
+export type CareItemPatch = {
+  title?: string
+  interval?: Interval
+}
+
 /** Экшены стора: стабильные между рендерами функции. */
 export interface StoreActions {
   /** Создаёт подопечного и его пункты ухода одним dispatch; возвращает созданного подопечного. */
@@ -55,6 +69,17 @@ export interface StoreActions {
   updateSubject(id: Id, patch: SubjectPatch): void
   /** Удаляет подопечного каскадом: его пункты ухода, журнал выполнений, события, вес, корм. */
   removeSubject(id: Id): void
+  /** Создаёт пункт ухода у подопечного; возвращает созданный пункт. */
+  addCareItem(subjectId: Id, draft: CareItemDraft): CareItem
+  updateCareItem(id: Id, patch: CareItemPatch): void
+  /** Удаляет пункт ухода вместе с его журналом выполнений (ADR-0003). */
+  removeCareItem(id: Id): void
+  /**
+   * «Сделано»: добавляет запись журнала. Дата приходит из формы (обычно
+   * сегодня); смена прошлого — только новой записью, редактирования нет
+   * (ADR-0003). «Следующий раз» пересчитается сам — он выводный.
+   */
+  logCompletion(careItemId: Id, date: DateString, note?: string): void
 }
 
 /** Значение контекста: состояние и экшены одним объектом. */
@@ -69,6 +94,10 @@ type StoreAction =
   | { type: 'subject/add'; subject: CareSubject; careItems: CareItem[] }
   | { type: 'subject/update'; id: Id; patch: SubjectPatch }
   | { type: 'subject/remove'; id: Id }
+  | { type: 'careItem/add'; item: CareItem }
+  | { type: 'careItem/update'; id: Id; patch: CareItemPatch }
+  | { type: 'careItem/remove'; id: Id }
+  | { type: 'completion/log'; entry: CompletionLogEntry }
 
 /** Чистый редьюсер: новые массивы и объекты, прежнее состояние не трогается. */
 function reducer(state: AppState, action: StoreAction): AppState {
@@ -114,6 +143,34 @@ function reducer(state: AppState, action: StoreAction): AppState {
         feed: state.feed.filter((entry) => entry.subjectId !== action.id),
       }
     }
+    case 'careItem/add':
+      return { ...state, careItems: [...state.careItems, action.item] }
+    case 'careItem/update': {
+      const index = state.careItems.findIndex((item) => item.id === action.id)
+      if (index === -1) return state
+      const next: CareItem = { ...state.careItems[index] }
+      if (action.patch.title !== undefined) next.title = action.patch.title
+      // Интервал просто заменяется: «следующий раз» нигде не хранится и
+      // пересчитается от последнего выполнения сам (ADR-0003).
+      if (action.patch.interval !== undefined) next.interval = action.patch.interval
+      const careItems = [...state.careItems]
+      careItems[index] = next
+      return { ...state, careItems }
+    }
+    case 'careItem/remove':
+      if (!state.careItems.some((item) => item.id === action.id)) return state
+      return {
+        ...state,
+        careItems: state.careItems.filter((item) => item.id !== action.id),
+        // Прошлое пункта без самого пункта не нужно: журнал уходит вместе с ним.
+        completionLog: state.completionLog.filter((entry) => entry.careItemId !== action.id),
+      }
+    case 'completion/log': {
+      // Запись без пункта — сирота: экраны не должны иметь возможности её создать,
+      // но стор не молчит, а просто не меняет состояние (no-op, как у несуществующего id).
+      if (!state.careItems.some((item) => item.id === action.entry.careItemId)) return state
+      return { ...state, completionLog: [...state.completionLog, action.entry] }
+    }
   }
 }
 
@@ -156,6 +213,34 @@ export function StoreProvider(props: { children: ReactNode; repository: Reposito
       },
       removeSubject(id) {
         dispatch({ type: 'subject/remove', id })
+      },
+      addCareItem(subjectId, draft) {
+        const item: CareItem = {
+          id: crypto.randomUUID(),
+          subjectId,
+          title: draft.title,
+          interval: draft.interval,
+        }
+        dispatch({ type: 'careItem/add', item })
+        return item
+      },
+      updateCareItem(id, patch) {
+        dispatch({ type: 'careItem/update', id, patch })
+      },
+      removeCareItem(id) {
+        dispatch({ type: 'careItem/remove', id })
+      },
+      logCompletion(careItemId, date, note) {
+        // Пустую заметку не храним совсем: сериализация и проверки
+        // toStrictEqual различают «поля нет» и «пустая строка» (см. photo).
+        const trimmed = note?.trim()
+        const entry: CompletionLogEntry = {
+          id: crypto.randomUUID(),
+          careItemId,
+          date,
+          ...(trimmed ? { note: trimmed } : {}),
+        }
+        dispatch({ type: 'completion/log', entry })
       },
     }),
     // dispatch стабилен между рендерами — экшены не пересоздаются и не

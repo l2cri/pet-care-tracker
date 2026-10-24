@@ -1,0 +1,37 @@
+/* История — лента фактов: дата крупнее, заметка приглушённой строкой под
+   ней. Никаких бейджей и цветов: прошлое уже не срочно. */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+.date {
+  font-weight: 600;
+}
+
+.note {
+  font-size: var(--font-size-s);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}

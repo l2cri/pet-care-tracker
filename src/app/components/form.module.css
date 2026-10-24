@@ -1,0 +1,123 @@
+/*
+  Общие стили форм в bottom-sheet: поля, подписи, ошибки, строка интервала,
+  кнопки действий. Живут отдельным модулем, чтобы SubjectSheet, CareItemSheet
+  и DoneSheet не копировали одинаковые классы. Только токены (ADR-0006).
+*/
+
+/* Форма — вертикальный стек полей: мобильный-first, одно поле на строку,
+   до кнопок дотягивается большой палец. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-family: var(--font-family);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
+}
+
+/* 44px высоты — touch-friendly; фон поля чуть темнее панели, чтобы
+   input читался на карточке в обеих темах. textarea — те же рамки,
+   но многострочная. */
+.input,
+.textarea {
+  min-height: 44px;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-s);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.inputInvalid {
+  border-color: var(--color-danger);
+}
+
+.error {
+  font-size: var(--font-size-s);
+  color: var(--color-danger);
+}
+
+/* Приглушённая подсказка под полем: итоговая подпись интервала и подобное. */
+.hint {
+  margin: 0;
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
+}
+
+/* Строка интервала «каждые [число] [единица]» — в SubjectSheet и CareItemSheet. */
+.intervalRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.intervalWord {
+  flex: none;
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
+}
+
+.intervalValue {
+  width: 76px;
+  flex: none;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+/* Кнопки одинаковой высоты 48px, каждая тянется на половину ряда. */
+.primary,
+.secondary,
+.danger {
+  flex: 1;
+  min-height: 48px;
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.secondary {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-weight: 400;
+}
+
+/* Залитая красная — только подтверждение необратимого действия. */
+.danger {
+  border: none;
+  background: var(--color-danger);
+  color: var(--color-on-danger);
+}
+
+/* Текст подтверждения удаления: обычный абзац до ряда кнопок. */
+.note {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+}

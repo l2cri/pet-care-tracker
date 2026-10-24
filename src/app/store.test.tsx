@@ -262,3 +262,124 @@ describe('Стор подопечных', () => {
     expect(() => render(<Outside />)).toThrow(/StoreProvider/)
   })
 })
+
+/**
+ * Проба стора пунктов ухода: кнопки зовут публичные экшены. Все работают
+ * с care-1 (пункт subject-1, в журнале две записи log-1/log-2), чтобы
+ * каскады были видны на насыщенной фикстуре.
+ */
+function CareItemProbe() {
+  const { state, addCareItem, updateCareItem, removeCareItem, logCompletion } = useStore()
+  const care1 = state.careItems[0]
+  return (
+    <div>
+      <button onClick={() => addCareItem('subject-2', { title: 'Ушные капли', interval: { value: 30, unit: 'days' } })}>
+        добавить пункт
+      </button>
+      <button onClick={() => updateCareItem(care1.id, { interval: { value: 6, unit: 'months' } })}>
+        сменить интервал первого
+      </button>
+      <button onClick={() => updateCareItem(care1.id, { title: 'Вакцинация' })}>
+        переименовать первый
+      </button>
+      <button onClick={() => removeCareItem(care1.id)}>удалить первый пункт</button>
+      <button onClick={() => logCompletion(care1.id, '2026-10-24')}>отметить сделанным</button>
+      <button onClick={() => logCompletion(care1.id, '2026-10-25', '  Нобивак, «Айболит»  ')}>
+        отметить сделанным с заметкой
+      </button>
+      <button onClick={() => logCompletion('care-нет', '2026-10-24')}>
+        отметить несуществующий пункт
+      </button>
+    </div>
+  )
+}
+
+describe('Стор пунктов ухода и журнала', () => {
+  function renderProbe() {
+    const repo = new InMemoryRepository()
+    repo.save(sampleAppState())
+    render(
+      <StoreProvider repository={repo}>
+        <CareItemProbe />
+      </StoreProvider>,
+    )
+    return repo
+  }
+
+  it('addCareItem создаёт пункт у подопечного', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить пункт' }))
+
+    const loaded = repo.load()
+    const created = loaded.careItems.find((item) => item.title === 'Ушные капли')
+    expect(created).toStrictEqual({
+      id: expect.any(String) as string,
+      subjectId: 'subject-2',
+      title: 'Ушные капли',
+      interval: { value: 30, unit: 'days' },
+    })
+    // Прежние пункты не тронуты.
+    expect(loaded.careItems).toHaveLength(4)
+  })
+
+  it('updateCareItem меняет интервал, не трогая заголовок — «следующий раз» выводный, пересчитается сам', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'сменить интервал первого' }))
+
+    const updated = repo.load().careItems[0]
+    expect(updated.title).toBe('Прививка')
+    expect(updated.interval).toStrictEqual({ value: 6, unit: 'months' })
+  })
+
+  it('updateCareItem патчит только заголовок', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'переименовать первый' }))
+
+    const updated = repo.load().careItems[0]
+    expect(updated.title).toBe('Вакцинация')
+    expect(updated.interval).toStrictEqual({ value: 12, unit: 'months' })
+  })
+
+  it('removeCareItem уносит журнал пункта, чужие записи остаются', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'удалить первый пункт' })) // care-1
+
+    const loaded = repo.load()
+    expect(loaded.careItems.map((item) => item.id)).toStrictEqual(['care-2', 'care-3'])
+    // log-1 и log-2 принадлежали care-1 — ушли; log-3 (care-3) остался.
+    expect(loaded.completionLog.map((entry) => entry.id)).toStrictEqual(['log-3'])
+  })
+
+  it('logCompletion добавляет запись без заметки — поля note нет совсем', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'отметить сделанным' }))
+
+    const entry = repo.load().completionLog.find((e) => e.careItemId === 'care-1' && e.date === '2026-10-24')
+    expect(entry).toBeDefined()
+    expect(entry!.id).not.toBe('log-1')
+    expect('note' in entry!).toBe(false)
+  })
+
+  it('logCompletion с заметкой обрезает пробелы по краям', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'отметить сделанным с заметкой' }))
+
+    const entry = repo.load().completionLog.find((e) => e.careItemId === 'care-1' && e.date === '2026-10-25')
+    expect(entry!.note).toBe('Нобивак, «Айболит»')
+  })
+
+  it('logCompletion несуществующего пункта — no-op, состояние не меняется', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'отметить несуществующий пункт' }))
+
+    expect(repo.load()).toBe(before)
+  })
+})
