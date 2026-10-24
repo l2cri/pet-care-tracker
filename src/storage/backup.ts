@@ -176,7 +176,9 @@ function validateAppState(value: unknown, path: string): AppState {
     const list = asArray(state[key], `${path}.${key}`)
     list.forEach((entity, index) => validateEntity(entity, `${path}.${key}[${index}]`))
   }
-  return state as AppState
+  // Все шесть ключей проверены циклом выше — приведение обосновано,
+  // TS вывести это по Record<string, unknown> не может.
+  return state as unknown as AppState
 }
 
 function parseJson(text: string): unknown {
