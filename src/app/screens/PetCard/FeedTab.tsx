@@ -28,12 +28,10 @@ import styles from './FeedTab.module.css'
 export interface FeedTabProps {
   /** Подопечный, чей журнал корма показываем. */
   subjectId: Id
-  /** Имя подопечного для живого текста пустого состояния; опционально. */
-  subjectName?: string
 }
 
 export function FeedTab(props: FeedTabProps): ReactElement {
-  const { subjectId, subjectName } = props
+  const { subjectId } = props
   const { state, removeFeedEntry } = useStore()
 
   // «Сегодня» — один раз на рендер вкладки: окно месяцев и таймеры согласованы.
@@ -66,8 +64,8 @@ export function FeedTab(props: FeedTabProps): ReactElement {
           <div className={styles.empty}>
             <h3 className={styles.emptyTitle}>Покупок пока нет</h3>
             <p className={styles.emptyText}>
-              Добавляйте покупки{subjectName !== undefined ? ` для ${subjectName}` : ''} — дату,
-              цену и вердикт «подошёл / не подошёл», чтобы плохой корм больше не купить.
+              Добавляйте покупки — дату, цену и вердикт «подошёл / не подошёл», чтобы плохой
+              корм больше не купить, а расходы на корм были видны по месяцам.
             </p>
             <button type="button" className={styles.emptyButton} onClick={() => setCreating(true)}>
               Добавить покупку

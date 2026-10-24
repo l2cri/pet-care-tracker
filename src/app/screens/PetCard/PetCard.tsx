@@ -335,7 +335,7 @@ export function PetCard(props: PetCardProps): ReactElement {
           </div>
         )}
 
-        {tab === 'feed' && <FeedTab subjectId={subjectId} subjectName={subject.name} />}
+        {tab === 'feed' && <FeedTab subjectId={subjectId} />}
       </main>
 
       {/* FAB добавления пункта — только на вкладке ухода. */}
