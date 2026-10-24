@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { CareItem, CompletionLogEntry, DateString } from './model'
+import type { CareItem, CompletionLogEntry, DateString, OneOffEvent } from './model'
 import {
+  dashboardTodoList,
+  eventUrgency,
   mostUrgent,
   SOON_WINDOW_DAYS,
   sortTodoList,
+  upcomingEvents,
   urgencyOf,
   withUrgency,
 } from './urgency'
@@ -136,6 +139,98 @@ describe('sortTodoList: общий список дел дашборда', () => 
     const snapshot = [...entries]
     sortTodoList(entries, TODAY)
     expect(entries).toEqual(snapshot)
+  })
+})
+
+/** Разовое событие подопечного subject-1 с датой и флагом done. */
+function oneOff(id: string, date: DateString, done = false, subjectId = 'subject-1'): OneOffEvent {
+  return { id, subjectId, title: id, date, done }
+}
+
+describe('eventUrgency: срочность разового события (тикет 07)', () => {
+  it('выполненные — calm независимо от даты: в списках дел их нет', () => {
+    expect(eventUrgency(oneOff('event-1', '2026-10-01', true), TODAY)).toBe('calm')
+    expect(eventUrgency(oneOff('event-2', '2026-10-24', true), TODAY)).toBe('calm')
+  })
+
+  it('дата прошла — overdue; сегодня и окно «скоро» — soon', () => {
+    expect(eventUrgency(oneOff('event-1', '2026-10-23'), TODAY)).toBe('overdue')
+    expect(eventUrgency(oneOff('event-2', '2026-10-24'), TODAY)).toBe('soon')
+    expect(eventUrgency(oneOff('event-3', '2026-10-30'), TODAY)).toBe('soon')
+    expect(eventUrgency(oneOff('event-4', '2026-10-31'), TODAY)).toBe('soon')
+  })
+
+  it('8 и больше дней — calm', () => {
+    expect(eventUrgency(oneOff('event-1', '2026-11-01'), TODAY)).toBe('calm')
+    expect(eventUrgency(oneOff('event-2', '2026-12-01'), TODAY)).toBe('calm')
+  })
+})
+
+describe('upcomingEvents: предстоящие разовые события', () => {
+  it('выполненные не входят, остальные — по возрастанию даты', () => {
+    const events = [
+      oneOff('late', '2026-12-01'),
+      oneOff('done', '2026-10-20', true),
+      oneOff('earliest', '2026-10-23'),
+      oneOff('middle', '2026-11-05'),
+    ]
+    expect(upcomingEvents(events, TODAY).map((due) => due.event.id)).toEqual([
+      'earliest',
+      'middle',
+      'late',
+    ])
+  })
+
+  it('срочность проставлена каждому событию', () => {
+    const result = upcomingEvents(
+      [oneOff('over', '2026-10-23'), oneOff('calm', '2026-11-23')],
+      TODAY,
+    )
+    expect(result.map((due) => due.urgency)).toEqual(['overdue', 'calm'])
+  })
+})
+
+describe('dashboardTodoList: общий список дел с разовыми событиями (тикет 07)', () => {
+  /** Смесь: просроченный пункт, «пора сейчас», soon-пункт и три события. */
+  const items = [
+    dueIn('over-1', -1, 'subject-1'), // пункт просрочен на день (2026-10-23)
+    item('never-done', { value: 12, unit: 'months' }, 'subject-2'), // «пора сейчас»
+    dueIn('soon-6', 6, 'subject-3'), // пункт через 6 дней (2026-10-30)
+  ]
+  const logEntries = [log('over-1', '2026-10-16'), log('soon-6', '2026-10-23')]
+  const events = [
+    oneOff('event-done', '2026-10-20', true), // выполненное — не входит
+    oneOff('event-over', '2026-10-14', false, 'subject-2'), // просрочено на 10 дней
+    oneOff('event-soon', '2026-10-25', false, 'subject-1'), // завтра
+    oneOff('event-calm', '2026-11-20', false, 'subject-3'), // далеко
+  ]
+
+  it('события и пункты в одном порядке: срочность, внутри группы — дата', () => {
+    const rows = dashboardTodoList(items, logEntries, events, TODAY)
+    expect(
+      rows.map((row) => (row.kind === 'careItem' ? row.item.id : row.event.id)),
+    ).toEqual([
+      'event-over', // overdue, 2026-10-14 — раньше пункта over-1
+      'over-1', // overdue, 2026-10-23
+      'never-done', // overdue «пара сейчас», ключ — сегодня 2026-10-24
+      'event-soon', // soon, завтра
+      'soon-6', // soon, через 6 дней
+      'event-calm', // calm, 2026-11-20
+    ])
+  })
+
+  it('кастомный список дашборда согласован с sortTodoList по части пунктов', () => {
+    const rows = dashboardTodoList(items, logEntries, [], TODAY)
+    const onlyItems = sortTodoList(withUrgency(items, logEntries, TODAY), TODAY)
+    expect(rows.map((row) => (row.kind === 'careItem' ? row.item.id : row.event.id))).toEqual(
+      onlyItems.map((due) => due.item.id),
+    )
+  })
+
+  it('чистая функция: входные массивы не мутируются', () => {
+    const eventsSnapshot = [...events]
+    dashboardTodoList(items, logEntries, events, TODAY)
+    expect(events).toEqual(eventsSnapshot)
   })
 })
 
