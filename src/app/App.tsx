@@ -1,3 +1,5 @@
+import { Dashboard } from './screens/Dashboard/Dashboard'
+
 export function App() {
-  return <h1>Питомцы и дом</h1>
+  return <Dashboard />
 }

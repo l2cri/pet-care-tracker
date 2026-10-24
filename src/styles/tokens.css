@@ -1,0 +1,58 @@
+/*
+  Дизайн-токены «Питомцы и дом» — единственный источник цветов, радиусов, отступов.
+  Тёмная тема — только через prefers-color-scheme, без переключателя (ADR-0006).
+  Якоря палитры согласованы с favicon и meta theme-color в index.html:
+  акцент #2e7d46, фон светлой темы #f6f8f4, фон тёмной #141a15.
+*/
+
+:root {
+  /* Палитра: светлая тема */
+  --color-bg: #f6f8f4;
+  --color-card: #ffffff;
+  --color-text: #1f2b22;
+  --color-text-muted: #5c6b60;
+  --color-accent: #2e7d46;
+  --color-on-accent: #ffffff;
+  --color-border: #dbe4da;
+  /* Срочность дашборда (тикет 05): просрочено / скоро (≤ 7 дней) */
+  --color-urgency-overdue: #c0392b;
+  --color-urgency-soon: #b07d10;
+
+  /* Радиусы */
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 20px;
+
+  /* Отступы */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+
+  /* Типографика */
+  --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-size-s: 0.875rem;
+  --font-size-m: 1rem;
+  --font-size-l: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --line-height: 1.5;
+
+  /* Безопасные зоны (вырезы, жестовая полоска) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #141a15;
+    --color-card: #1c2620;
+    --color-text: #e4ece5;
+    --color-text-muted: #98a89c;
+    --color-accent: #58b076;
+    --color-on-accent: #0f150f;
+    --color-border: #2a372e;
+    --color-urgency-overdue: #e07070;
+    --color-urgency-soon: #d9a949;
+  }
+}
