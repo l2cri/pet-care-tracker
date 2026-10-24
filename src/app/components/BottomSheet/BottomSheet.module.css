@@ -1,0 +1,97 @@
+/* Оверлей прижат к низу: панель «выезжает» снизу, как нативный sheet.
+   z-index выше карточек и FAB — лист всегда поверх экрана. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--color-scrim);
+  animation: sheet-fade 0.2s ease-out;
+}
+
+/* Высота — не больше вьюпорта (минус воздух сверху); шапка закреплена,
+   контент скроллится внутри. min-height: 0 обязателен для скролла во flex.
+   На широких экранах лист не растягивается на всю ширину — это мобильный
+   паттерн, 480px хватает любой форме. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100dvh - var(--space-6));
+  min-height: 0;
+  background: var(--color-card);
+  color: var(--color-text);
+  border-radius: var(--radius-l) var(--radius-l) 0 0;
+  box-shadow: var(--shadow-sheet);
+  animation: sheet-up 0.25s ease-out;
+  outline: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex: none;
+  padding: var(--space-4) var(--space-4) var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-l);
+  line-height: var(--line-height);
+}
+
+/* Крестик — запасной способ закрыть для тех, кто не догадался тапнуть мимо.
+   44px — touch-friendly минимум. */
+.close {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: calc(var(--space-1) * -1);
+  border: none;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-m);
+  cursor: pointer;
+}
+
+/* Нижний паддинг учитывает жестовую полоску: контент не прячется под ней. */
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-4) calc(var(--safe-bottom) + var(--space-4));
+  -webkit-overflow-scrolling: touch;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Анимация появления — украшение, а не смысл: при reduced-motion лист
+   просто появляется на месте (правило уважения системных настроек). */
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .panel {
+    animation: none;
+  }
+}
