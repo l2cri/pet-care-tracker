@@ -6,6 +6,11 @@
  * Импорт валидирует каждый тип и каждое поле; неправильный файл отклоняется
  * целиком — текущее состояние не меняется, пока парсинг не прошёл успешно.
  *
+ * Неизвестные ключи в конверте и внутри записей не отвергаются (lenient
+ * reader): файл с нашим конвертом и корректными полями принимается, чужие
+ * ключи проходят насквозь. Граница совместимости версий — formatVersion;
+ * строгий контроль состава ключей для MVP признан избыточным.
+ *
  * Валидация дат — доменовой функцией isValidDateString (ADR-0008), storage
  * собственную календарную логику не дублирует.
  */
@@ -99,7 +104,7 @@ function asEnum<T extends string>(value: unknown, path: string, allowed: readonl
 }
 
 /** Опциональное поле (note, photo): отсутствует или строка — null не допускается. */
-function asOptionalString(value: unknown, path: string): void {
+function checkOptionalString(value: unknown, path: string): void {
   if (value !== undefined) asString(value, path)
 }
 
@@ -110,7 +115,7 @@ function validateSubject(value: unknown, path: string): void {
   asString(subject.name, `${path}.name`)
   asString(subject.species, `${path}.species`)
   asDate(subject.birthDate, `${path}.birthDate`)
-  asOptionalString(subject.photo, `${path}.photo`)
+  checkOptionalString(subject.photo, `${path}.photo`)
 }
 
 function validateCareItem(value: unknown, path: string): void {
@@ -128,7 +133,7 @@ function validateCompletionLogEntry(value: unknown, path: string): void {
   asString(entry.id, `${path}.id`)
   asString(entry.careItemId, `${path}.careItemId`)
   asDate(entry.date, `${path}.date`)
-  asOptionalString(entry.note, `${path}.note`)
+  checkOptionalString(entry.note, `${path}.note`)
 }
 
 function validateOneOffEvent(value: unknown, path: string): void {
@@ -138,7 +143,7 @@ function validateOneOffEvent(value: unknown, path: string): void {
   asString(event.title, `${path}.title`)
   asDate(event.date, `${path}.date`)
   asBoolean(event.done, `${path}.done`)
-  asOptionalString(event.note, `${path}.note`)
+  checkOptionalString(event.note, `${path}.note`)
 }
 
 function validateWeightEntry(value: unknown, path: string): void {
@@ -158,7 +163,7 @@ function validateFeedEntry(value: unknown, path: string): void {
   asString(entry.foodName, `${path}.foodName`)
   asNumber(entry.price, `${path}.price`)
   asEnum(entry.verdict, `${path}.verdict`, ['ok', 'bad'])
-  asOptionalString(entry.note, `${path}.note`)
+  checkOptionalString(entry.note, `${path}.note`)
 }
 
 /** Проверка всех шести коллекций по типам model.ts; возвращает то же значение типизированным. */

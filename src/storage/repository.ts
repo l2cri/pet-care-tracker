@@ -1,5 +1,5 @@
 /**
- * Стом хранилища: localStorage спрятан за интерфейсом Repository (ADR-0001).
+ * Слой хранилища: localStorage спрятан за интерфейсом Repository (ADR-0001).
  *
  * Две реализации: in-memory (тесты, демо-прогоны) и localStorage-обёртка
  * (localStorageRepo.ts). Точка замены на IndexedDB без касания domain и app

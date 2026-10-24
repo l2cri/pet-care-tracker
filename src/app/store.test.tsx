@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
-import type { CareSubject } from '../domain/model'
+import type { AppState, CareSubject } from '../domain/model'
 import { emptyAppState, InMemoryRepository } from '../storage/repository'
 import type { Repository } from '../storage/repository'
 import { sampleAppState } from '../storage/testState'
@@ -20,7 +20,7 @@ const newSubject: CareSubject = {
  * Проба: локальное состояние + автосохранение — так стор тикета 04
  * соединит useReducer с useAutoSave.
  */
-function Probe({ repo, initial }: { repo: Repository; initial: ReturnType<typeof sampleAppState> }) {
+function Probe({ repo, initial }: { repo: Repository; initial: AppState }) {
   const [state, setState] = useState(initial)
   useAutoSave(state, repo)
   return (
