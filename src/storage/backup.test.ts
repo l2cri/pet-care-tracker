@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AppState } from '../domain/model'
-import { FORMAT_VERSION, exportJson, parseImport } from './backup'
+import { CURRENT_FORMAT_VERSION, BackupImportError, exportJson, parseImport } from './backup'
 
 /** Полное состояние: все шесть коллекций, опциональные поля note и photo. */
 function fullState(): AppState {
@@ -41,14 +41,14 @@ function fullState(): AppState {
 
 /** Конверт текущей версии с испорченным полем верхнего уровня состояния. */
 function brokenBackup(overrides: Record<string, unknown>): string {
-  return JSON.stringify({ formatVersion: FORMAT_VERSION, data: { ...fullState(), ...overrides } })
+  return JSON.stringify({ formatVersion: CURRENT_FORMAT_VERSION, state: { ...fullState(), ...overrides } })
 }
 
 /** Конверт текущей версии с испорченной записью внутри состояния. */
 function brokenEntry(mutate: (state: AppState) => void): string {
   const state = fullState()
   mutate(state)
-  return JSON.stringify({ formatVersion: FORMAT_VERSION, data: state })
+  return JSON.stringify({ formatVersion: CURRENT_FORMAT_VERSION, state })
 }
 
 describe('round-trip бэкапа', () => {
@@ -68,37 +68,47 @@ describe('round-trip бэкапа', () => {
     expect(parseImport(exportJson(empty))).toEqual(empty)
   })
 
-  it('экспорт несёт formatVersion текущего формата', () => {
-    const envelope = JSON.parse(exportJson(fullState())) as { formatVersion: number }
-    expect(envelope.formatVersion).toBe(FORMAT_VERSION)
+  it('экспорт — конверт { formatVersion, state } текущей версии', () => {
+    expect(JSON.parse(exportJson(fullState()))).toEqual({
+      formatVersion: CURRENT_FORMAT_VERSION,
+      state: fullState(),
+    })
   })
 })
 
 describe('импорт отвергает битый и чужой JSON', () => {
   it('не-JSON — понятная ошибка', () => {
-    expect(() => parseImport('это не json')).toThrow('Битый JSON')
+    expect(() => parseImport('это не json')).toThrow('Не удалось разобрать JSON')
   })
 
   it('чужой JSON без formatVersion — понятная ошибка', () => {
-    expect(() => parseImport('{"foo": 1}')).toThrow('не бэкап')
+    expect(() => parseImport('{"foo": 1}')).toThrow('не похож на бэкап')
   })
 
-  it('массив вместо объекта конверта — понятная ошибка', () => {
-    expect(() => parseImport('[1, 2, 3]')).toThrow('не бэкап')
+  it('массив вместо конверта — понятная ошибка', () => {
+    expect(() => parseImport('[1, 2, 3]')).toThrow('ожидается объект')
   })
 
-  it('нечелая версия формата — понятная ошибка', () => {
-    const text = JSON.stringify({ formatVersion: '1', data: fullState() })
-    expect(() => parseImport(text)).toThrow('целым числом')
+  it('отсутствует поле state — понятная ошибка', () => {
+    expect(() => parseImport('{"formatVersion": 1}')).toThrow('state — ожидается объект')
+  })
+
+  it('версия формата 0 или нечисловая — не бэкап', () => {
+    expect(() => parseImport('{"formatVersion": 0, "state": {}}')).toThrow('не похож на бэкап')
+    expect(() => parseImport('{"formatVersion": "1", "state": {}}')).toThrow('не похож на бэкап')
   })
 
   it('более новая версия формата — понятная ошибка', () => {
-    const text = JSON.stringify({ formatVersion: FORMAT_VERSION + 1, data: fullState() })
-    expect(() => parseImport(text)).toThrow('новой версией')
+    const text = JSON.stringify({ formatVersion: CURRENT_FORMAT_VERSION + 1, state: fullState() })
+    expect(() => parseImport(text)).toThrow('более новой версией')
   })
 
-  it('коллекция не является списком', () => {
-    expect(() => parseImport(brokenBackup({ subjects: 'нет' }))).toThrow('subjects — ожидается список')
+  it('все ошибки импорта — BackupImportError (настройки покажут текст, тикет 10)', () => {
+    expect(() => parseImport('это не json')).toThrow(BackupImportError)
+  })
+
+  it('коллекция не является массивом', () => {
+    expect(() => parseImport(brokenBackup({ subjects: 'нет' }))).toThrow('state.subjects — ожидается массив')
   })
 
   it('дата рождения не в формате YYYY-MM-DD', () => {
@@ -118,7 +128,7 @@ describe('импорт отвергает битый и чужой JSON', () => 
   })
 
   it('неизвестная единица интервала', () => {
-    expect(() => parseImport(brokenEntry((s) => Object.assign(s.careItems[0].interval, { unit: 'fortnights' })))).toThrow('unit')
+    expect(() => parseImport(brokenEntry((s) => Object.assign(s.careItems[0].interval, { unit: 'fortnights' })))).toThrow('interval.unit')
   })
 
   it('флаг «сделано» разового события — не boolean', () => {
@@ -131,11 +141,11 @@ describe('импорт отвергает битый и чужой JSON', () => 
 })
 
 describe('импорт атомарен', () => {
-  it('либо полное состояние, либо ошибка — частичного применения не бывает', () => {
+  it('либо полное состояние, либо ошибка — текущее состояние не портится', () => {
     const state = fullState()
     const text = exportJson(state)
-    expect(() => parseImport(brokenEntry((s) => { s.subjects[0].birthDate = '2020-02-30' }))).toThrow()
-    // Текущее состояние не пострадало: исходный бэкап по-прежнему читается целиком.
+    expect(() => parseImport(brokenEntry((s) => { s.subjects[0].birthDate = '2020-02-30' }))).toThrow(BackupImportError)
+    // Исходный бэкап по-прежнему читается целиком: неудачный разбор ничего не изменил.
     expect(parseImport(text)).toEqual(state)
   })
 })
