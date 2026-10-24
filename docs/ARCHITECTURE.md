@@ -35,8 +35,10 @@ src/
     demoData.ts           #   демо-набор: 2 питомца с историей
   storage/
     repository.ts         #   интерфейс Repository (load / save / wipe)
-    localStorageRepo.ts   #   реализация на localStorage + миграции по formatVersion
-    backup.ts             #   exportJson(state) / parseImport(text) с валидацией
+    localStorageRepo.ts   #   тонкая обёртка над localStorage
+    backup.ts             #   конверт { formatVersion, state }: export/import
+                          #   с валидацией и миграциями по formatVersion
+                          #   (конверт общий с localStorage)
   app/
     store.tsx             #   context + useReducer + автосохранение в репозиторий
     screens/
