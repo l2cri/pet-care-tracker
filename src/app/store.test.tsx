@@ -579,3 +579,79 @@ describe('Стор разовых событий (тикет 07)', () => {
     expect(repo.load()).toBe(before)
   })
 })
+
+/**
+ * Проба стора замеров веса (тикет 08): кнопки зовут публичные экшены.
+ * Фикстура хранит два замера subject-1; первый — weight-1 (2026-06-01, 4100 г).
+ */
+function WeightProbe() {
+  const { state, addWeight, removeWeight } = useStore()
+  const first = state.weights[0]
+  return (
+    <div>
+      <button onClick={() => addWeight('subject-1', { date: '2026-10-25', grams: 4300 })}>
+        добавить замер
+      </button>
+      <button onClick={() => addWeight('subject-нет', { date: '2026-10-25', grams: 4300 })}>
+        добавить замер чужому подопечному
+      </button>
+      <button onClick={() => removeWeight(first.id)}>удалить первый замер</button>
+      <button onClick={() => removeWeight('weight-нет')}>удалить несуществующий замер</button>
+    </div>
+  )
+}
+
+describe('Стор замеров веса (тикет 08)', () => {
+  function renderProbe() {
+    const repo = new InMemoryRepository()
+    repo.save(sampleAppState())
+    render(
+      <StoreProvider repository={repo}>
+        <WeightProbe />
+      </StoreProvider>,
+    )
+    return repo
+  }
+
+  it('addWeight создаёт замер: дата и целые граммы ложатся как есть', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить замер' }))
+
+    const created = repo.load().weights.find((entry) => entry.date === '2026-10-25')
+    expect(created).toStrictEqual({
+      id: expect.any(String) as string,
+      subjectId: 'subject-1',
+      date: '2026-10-25',
+      grams: 4300,
+    })
+    // Прежние замеры не тронуты.
+    expect(repo.load().weights).toHaveLength(3)
+  })
+
+  it('addWeight чужому подопечному — no-op, состояние не меняется', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить замер чужому подопечному' }))
+
+    expect(repo.load()).toBe(before)
+  })
+
+  it('removeWeight удаляет только свой замер', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'удалить первый замер' }))
+
+    expect(repo.load().weights.map((entry) => entry.id)).toStrictEqual(['weight-2'])
+  })
+
+  it('removeWeight несуществующего — no-op', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'удалить несуществующий замер' }))
+
+    expect(repo.load()).toBe(before)
+  })
+})
