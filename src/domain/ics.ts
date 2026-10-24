@@ -154,9 +154,12 @@ function vcalendar(eventLines: readonly string[]): string {
     'CALSCALE:GREGORIAN',
     ...eventLines,
     'END:VCALENDAR',
+    // Финальный CRLF после END:VCALENDAR обязателен (RFC 5545 §3.4):
+    // строгие валидаторы помечают файл без него ошибкой.
   ]
     .map(foldLine)
     .join('\r\n')
+    .concat('\r\n')
 }
 
 /**

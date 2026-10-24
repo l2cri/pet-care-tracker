@@ -46,7 +46,10 @@ function referenceVcalendar(rrule: string): string {
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR',
-  ].join('\r\n')
+  ]
+    .join('\r\n')
+    // финальный CRLF обязателен по RFC 5545 §3.4 — эталон закрепляет и его
+    .concat('\r\n')
 }
 
 describe('эталонные VCALENDAR по единицам интервала (ADR-0004)', () => {
