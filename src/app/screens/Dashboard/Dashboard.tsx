@@ -1,17 +1,24 @@
 /**
- * Дашборд (User Stories 1, 26, 27, 33, 37): первый экран с карточками всех
- * подопечных. Данные — только из стора; какое окно (создание, правка,
- * подтверждение удаления) открыто — локальное UI-состояние экрана, стор
- * про него не знает.
+ * Дашборд (User Stories 1, 12, 13, 26, 27, 33, 37): первый экран с карточками
+ * всех подопечных и общим списком дел. Карточка — точка входа в «Карточку
+ * питомца» (тикет 05); бейдж на карточке — самый срочный пункт подопечного
+ * (mostUrgent), общий список — просроченное и «скоро» по всем подопечным,
+ * отсортированные доменной сортировкой.
  *
- * Карточка в этом тикете никуда не ведёт: таймеры, бейджи и вкладки —
- * тикеты 05 и дальше. Компонент не считает ни возрастов, ни сроков.
+ * Данные — только из стора; какое окно (создание, правка, подтверждение
+ * удаления) открыто — локальное UI-состояние экрана, стор про него не знает.
+ * Компонент не считает ни возрастов, ни сроков — только функции домена.
  */
 
 import { useState } from 'react'
-import type { CareSubject } from '../../../domain/model'
+import type { ReactElement } from 'react'
+import type { CareSubject, Id } from '../../../domain/model'
+import { mostUrgent, sortTodoList, withUrgency } from '../../../domain/urgency'
 import { BottomSheet } from '../../components/BottomSheet/BottomSheet'
+import { CareTimer } from '../../components/CareTimer/CareTimer'
 import { SubjectSheet } from '../../components/SubjectSheet/SubjectSheet'
+import { UrgencyBadge } from '../../components/UrgencyBadge/UrgencyBadge'
+import { todayDateString } from '../../today'
 import { useStore } from '../../store'
 import styles from './Dashboard.module.css'
 
@@ -20,9 +27,25 @@ function subjectInitial(name: string): string {
   return name.trim().charAt(0).toUpperCase() || '•'
 }
 
-export function Dashboard() {
+export interface DashboardProps {
+  /** Открыть карточку питомца — навигация стейтом в App (без роутера). */
+  onOpenSubject: (id: Id) => void
+}
+
+export function Dashboard(props: DashboardProps): ReactElement {
+  const { onOpenSubject } = props
   const { state, removeSubject } = useStore()
   const subjects = state.subjects
+  // «Сегодня» — один раз на рендер экрана: бейджи и список одного кадра согласованы.
+  const today = todayDateString()
+
+  // Общий список дел (User Story 12): просроченное и «скоро» по всем
+  // подопечным; порядок даёт доменная сортировка (срочность, внутри — дата).
+  const todoList = sortTodoList(
+    withUrgency(state.careItems, state.completionLog, today),
+    today,
+  ).filter((entry) => entry.urgency !== 'calm')
+  const subjectName = new Map(subjects.map((subject) => [subject.id, subject.name]))
 
   // Открытые bottom-sheet'ы: создание, правка и подтверждение удаления
   // взаимно исключающие — один лист на экране.
@@ -53,7 +76,15 @@ export function Dashboard() {
           <ul className={styles.list}>
             {subjects.map((subject) => (
               <li key={subject.id} className={styles.card}>
-                <div className={styles.cardMain}>
+                {/* Основная область карточки — кнопка в «Карточку питомца»
+                    (тикет 05); «Изменить» и «Удалить» — отдельные действия
+                    рядом, без вложенных кнопок. */}
+                <button
+                  type="button"
+                  className={styles.cardMain}
+                  onClick={() => onOpenSubject(subject.id)}
+                  aria-label={`Открыть карточку: ${subject.name}`}
+                >
                   {subject.photo !== undefined ? (
                     <img className={styles.avatar} src={subject.photo} alt="" />
                   ) : (
@@ -61,11 +92,22 @@ export function Dashboard() {
                       {subjectInitial(subject.name)}
                     </span>
                   )}
-                  <div className={styles.cardText}>
-                    <h2 className={styles.name}>{subject.name}</h2>
-                    <p className={styles.species}>{subject.species}</p>
-                  </div>
-                </div>
+                  <span className={styles.cardText}>
+                    <span className={styles.name}>{subject.name}</span>
+                    <span className={styles.species}>{subject.species}</span>
+                    <UrgencyBadge
+                      today={today}
+                      due={mostUrgent(
+                        state.careItems.filter((item) => item.subjectId === subject.id),
+                        state.completionLog,
+                        today,
+                      )}
+                    />
+                  </span>
+                  <span className={styles.chevron} aria-hidden="true">
+                    ›
+                  </span>
+                </button>
                 <div className={styles.cardActions}>
                   <button
                     type="button"
@@ -87,6 +129,32 @@ export function Dashboard() {
               </li>
             ))}
           </ul>
+        )}
+
+        {/* Общий список дел: показывается только когда есть что не забыть. */}
+        {todoList.length > 0 && (
+          <section className={styles.todo}>
+            <h2 className={styles.todoTitle}>Просрочено и скоро</h2>
+            <ul className={styles.todoList}>
+              {todoList.map((due) => (
+                <li key={due.item.id}>
+                  <button
+                    type="button"
+                    className={styles.todoRow}
+                    onClick={() => onOpenSubject(due.item.subjectId)}
+                  >
+                    <span className={styles.todoMeta}>
+                      <span className={styles.todoItem}>{due.item.title}</span>
+                      <span className={styles.todoSubject}>
+                        {subjectName.get(due.item.subjectId) ?? ''}
+                      </span>
+                    </span>
+                    <CareTimer today={today} due={due} short />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </main>
 

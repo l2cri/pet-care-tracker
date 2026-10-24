@@ -2,6 +2,7 @@
    раньше текста, «спокойному» пункту нечего кричать (приглушённый). */
 
 .badge {
+  display: block;
   margin: 0;
   font-size: var(--font-size-s);
   font-weight: 600;

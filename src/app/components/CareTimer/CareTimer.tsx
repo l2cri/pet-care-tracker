@@ -8,9 +8,9 @@
  */
 
 import type { ReactElement } from 'react'
-import type { DateString } from '../../domain/model'
-import type { CareItemDue } from '../../domain/urgency'
-import { daysUntil } from '../../domain/dates'
+import type { DateString } from '../../../domain/model'
+import type { CareItemDue } from '../../../domain/urgency'
+import { daysUntil } from '../../../domain/dates'
 import { formatDate, timerText, timerTextShort } from '../format'
 import styles from './CareTimer.module.css'
 
@@ -32,13 +32,13 @@ export function CareTimer(props: CareTimerProps): ReactElement {
 
   return (
     <div className={styles.timer}>
-      <p className={`${styles.line} ${styles[due.urgency]}`}>
+      <span className={`${styles.line} ${styles[due.urgency]}`}>
         {short ? timerTextShort(days) : timerText(days)}
-      </p>
+      </span>
       {detailed && (
-        <p className={styles.next}>
+        <span className={styles.next}>
           {due.nextDue === null ? 'Ещё не отмечали' : `Следующий раз: ${formatDate(due.nextDue)}`}
-        </p>
+        </span>
       )}
     </div>
   )

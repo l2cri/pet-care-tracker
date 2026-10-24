@@ -8,9 +8,9 @@
  */
 
 import type { ReactElement } from 'react'
-import type { DateString } from '../../domain/model'
-import type { CareItemDue } from '../../domain/urgency'
-import { daysUntil } from '../../domain/dates'
+import type { DateString } from '../../../domain/model'
+import type { CareItemDue } from '../../../domain/urgency'
+import { daysUntil } from '../../../domain/dates'
 import { timerTextShort } from '../format'
 import styles from './UrgencyBadge.module.css'
 
@@ -24,13 +24,13 @@ export interface UrgencyBadgeProps {
 export function UrgencyBadge(props: UrgencyBadgeProps): ReactElement {
   const { today, due } = props
   if (due === null) {
-    return <p className={`${styles.badge} ${styles.none}`}>Нет пунктов ухода</p>
+    return <span className={`${styles.badge} ${styles.none}`}>Нет пунктов ухода</span>
   }
   // daysUntil здесь только ради текста таймера; цвет уже решён urgency.
   const days = due.nextDue === null ? null : daysUntil(today, due.nextDue)
   return (
-    <p className={`${styles.badge} ${styles[due.urgency]}`}>
+    <span className={`${styles.badge} ${styles[due.urgency]}`}>
       {due.item.title} · {timerTextShort(days)}
-    </p>
+    </span>
   )
 }
