@@ -1,8 +1,9 @@
 /**
  * Карточка питомца (глоссарий: PetCard) — второй экран приложения с вкладками
  * Уход / Вес / Корм (User Stories 4–13, 28). Вкладка «Уход» — полный цикл
- * пункта: таймер срочности, «Сделано» с заметкой, история, правка и удаление;
- * Вес и Корм — заглушки до тикетов 08–09.
+ * пункта: таймер срочности, «Сделано» с заметкой, история, экспорт .ics
+ * в календарь (тикет 06), правка и удаление; Вес и Корм — заглушки до
+ * тикетов 08–09.
  *
  * Компонент не считает ни дат, ни срочности: порядок и цвета дают функции
  * домена (withUrgency, sortTodoList), «сегодня» — todayDateString(), мутации —
@@ -21,6 +22,7 @@ import { CareTimer } from '../../components/CareTimer/CareTimer'
 import { DoneSheet } from '../../components/DoneSheet/DoneSheet'
 import { HistorySheet } from '../../components/HistorySheet/HistorySheet'
 import { todayDateString } from '../../today'
+import { downloadCareItemCalendar } from '../../icsDownload'
 import { useStore } from '../../store'
 import form from '../../components/form.module.css'
 import styles from './PetCard.module.css'
@@ -150,6 +152,38 @@ export function PetCard(props: PetCardProps): ReactElement {
                       onClick={() => setShowingHistory(due.item)}
                     >
                       История
+                    </button>
+                    {/* Экспорт .ics в один клик (тикет 06, ADR-0004): иконка
+                        проговаривает, что напоминание живёт в календаре. */}
+                    <button
+                      type="button"
+                      className={styles.calendarButton}
+                      onClick={() =>
+                        downloadCareItemCalendar({
+                          item: due.item,
+                          subjectName: subject.name,
+                          nextDue: due.nextDue,
+                          today,
+                        })
+                      }
+                      aria-label="Экспортировать в календарь"
+                      title="Экспортировать в календарь"
+                    >
+                      <svg
+                        className={styles.calendarIcon}
+                        viewBox="0 0 24 24"
+                        width="20"
+                        height="20"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <rect x="3" y="5" width="18" height="16" rx="2" />
+                        <path d="M8 3v4M16 3v4M3 10h18" />
+                      </svg>
                     </button>
                     <button
                       type="button"
