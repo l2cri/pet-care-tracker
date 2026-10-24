@@ -55,6 +55,48 @@ export function formatDate(date: DateString): string {
 }
 
 /**
+ * Цена по-русски: десятичная запятая, копейки — только когда есть
+ * ('890 ₽', '890,50 ₽'), разряды не разделяются. Сначала округление в целые
+ * копейки: цена живёт double, и суммы monthlySpend не должны показывать
+ * float-хвост — тот же принцип гигиены, что целые граммы веса (ADR-0008).
+ */
+export function formatPrice(value: number): string {
+  const kopecks = Math.round(value * 100)
+  const rubles = Math.floor(kopecks / 100)
+  const rest = kopecks % 100
+  return rest === 0 ? `${rubles} ₽` : `${rubles},${String(rest).padStart(2, '0')} ₽`
+}
+
+/** Короткие подписи месяцев для оси столбиков расходов, индекс = месяц − 1. */
+const MONTH_SHORT_LABELS = [
+  'янв',
+  'фев',
+  'мар',
+  'апр',
+  'май',
+  'июн',
+  'июл',
+  'авг',
+  'сен',
+  'окт',
+  'ноя',
+  'дек',
+] as const
+
+/**
+ * Подпись месяца оси расходов: monthKey 'YYYY-MM' из monthlySpend → 'май'.
+ * Январь всегда с двузначным годом ('2027-01' → 'янв 27'): 6-месячное окно
+ * не повторяет месяцы, год нужен ровно один раз — на стыке лет. Нарезка
+ * строки без Date, календарной арифметики нет — как в formatDate.
+ */
+export function monthShortLabel(monthKey: string): string {
+  if (monthKey.slice(5, 7) === '01') {
+    return `янв ${monthKey.slice(2, 4)}`
+  }
+  return MONTH_SHORT_LABELS[Number(monthKey.slice(5, 7)) - 1]
+}
+
+/**
  * Текст таймера пункта ухода. days — результат daysUntil(today, nextDue);
  * null — пустой журнал («пора сейчас»). Согласование дней русское:
  * «Просрочено на 1 день», «Через 21 день». Цвет выбирает вызывающий код

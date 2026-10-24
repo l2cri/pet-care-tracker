@@ -1,0 +1,32 @@
+/* Столбики расходов (ADR-0005): SVG тянется на ширину карточки, высота —
+   пропорционально viewBox (display: block убирает щель inline-элемента).
+   Заливки и текст — токены, тёмная тема подхватывается без доп. классов. */
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-family);
+}
+
+.bar {
+  fill: var(--color-accent);
+}
+
+/* Базовая линия оси: столбики стоят на ней, а не висят в воздухе. */
+.axis {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.valueLabel {
+  fill: var(--color-text);
+  font-size: var(--font-size-s);
+  text-anchor: middle;
+}
+
+.monthLabel {
+  fill: var(--color-text-muted);
+  font-size: var(--font-size-s);
+  text-anchor: middle;
+}
