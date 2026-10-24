@@ -22,10 +22,10 @@ function log(careItemId: string, date: DateString): CompletionLogEntry {
 }
 
 /**
- * Пункт с интервалом 7 дней и журналом на `logDate`:
- * nextDue = logDate + 7 дней, то есть за N дней до TODAY журнал был N-7 дней назад.
+ * Пункт с интервалом 7 дней; второй аргумент документирует, на сколько дней
+ * от TODAY падает nextDue (сама дата задаётся журналом в тесте).
  */
-function dueIn(id: string, daysFromToday: number, subjectId = 'subject-1'): CareItem {
+function dueIn(id: string, _nextDueInDays: number, subjectId = 'subject-1'): CareItem {
   return item(id, { value: 7, unit: 'days' }, subjectId)
 }
 
