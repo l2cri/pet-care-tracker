@@ -320,7 +320,46 @@
   cursor: pointer;
 }
 
-/* Заглушки вкладок «Вес» и «Корм» (тикет 08–09) */
+/* Вкладка «Вес» (тикет 08): график на карточке поверх ленты замеров. */
+.weightChartCard {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+/* Лента замеров — как история выполнений: новые сверху, строка = факт.
+   Дата и вес делят строку с кнопкой удаления — всё в один тап на 360px. */
+.weightList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.weightEntry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+.weightDate {
+  font-weight: 600;
+}
+
+.weightValue {
+  flex: 1;
+  color: var(--color-text-muted);
+}
+
+/* Заглушка вкладки «Корм» (тикет 09) */
 .stub {
   padding: var(--space-6) var(--space-4);
   border: 1px dashed var(--color-border);
