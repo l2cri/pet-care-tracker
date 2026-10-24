@@ -4,7 +4,7 @@
 
 **Blocked by:** 05 (Пункты ухода — есть что экспортировать).
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 - [ ] Повторяющийся all-day VEVENT: `RRULE` (FREQ/INTERVAL выводится из единицы интервала пункта), `DTSTART` = вычисленная дата следующего выполнения
 - [ ] `VALARM` за сутки
