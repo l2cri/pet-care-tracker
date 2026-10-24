@@ -1,0 +1,27 @@
+/* Бейдж — одна строка под видом питомца: цвет срочности пункта читается
+   раньше текста, «спокойному» пункту нечего кричать (приглушённый). */
+
+.badge {
+  margin: 0;
+  font-size: var(--font-size-s);
+  font-weight: 600;
+  line-height: var(--line-height);
+}
+
+.overdue {
+  color: var(--color-urgency-overdue);
+}
+
+.soon {
+  color: var(--color-urgency-soon);
+}
+
+.calm {
+  color: var(--color-text-muted);
+}
+
+/* Пунктов нет — не срочность, а подсказка: без веса и без цвета тревоги. */
+.none {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
