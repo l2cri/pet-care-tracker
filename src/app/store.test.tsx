@@ -383,3 +383,199 @@ describe('Стор пунктов ухода и журнала', () => {
     expect(repo.load()).toBe(before)
   })
 })
+
+/**
+ * Проба стора разовых событий (тикет 07): кнопки зовут публичные экшены.
+ * Первое событие фикстуры — event-1 (subject-1, 2026-11-05, предстоящее,
+ * с заметкой); event-2 уже выполнен — на нём виден no-op повтора.
+ */
+function OneOffEventProbe() {
+  const { state, addOneOffEvent, updateOneOffEvent, removeOneOffEvent, completeOneOffEvent } =
+    useStore()
+  const first = state.oneOffEvents[0]
+  return (
+    <div>
+      <button onClick={() => addOneOffEvent('subject-1', { title: 'Стрижка', date: '2026-12-01' })}>
+        добавить событие
+      </button>
+      <button
+        onClick={() =>
+          addOneOffEvent('subject-1', { title: 'Укол', date: '2026-11-10', note: '  Анадин  ' })
+        }
+      >
+        добавить событие с заметкой
+      </button>
+      <button
+        onClick={() => addOneOffEvent('subject-1', { title: 'Чипирование', date: '2026-12-05', note: '   ' })}
+      >
+        добавить событие с пустой заметкой
+      </button>
+      <button
+        onClick={() => addOneOffEvent('subject-нет', { title: 'Сирота', date: '2026-12-05' })}
+      >
+        добавить событие чужому подопечному
+      </button>
+      <button onClick={() => updateOneOffEvent(first.id, { title: 'Осмотр' })}>
+        переименовать первое событие
+      </button>
+      <button onClick={() => updateOneOffEvent(first.id, { date: '2026-11-20' })}>
+        перенести первое событие
+      </button>
+      <button onClick={() => updateOneOffEvent(first.id, { note: null })}>
+        убрать заметку первого
+      </button>
+      <button onClick={() => updateOneOffEvent(first.id, { note: '   ' })}>
+        заменить заметку первого на пустую
+      </button>
+      <button onClick={() => updateOneOffEvent('event-нет', { title: 'Никого' })}>
+        изменить несуществующее событие
+      </button>
+      <button onClick={() => completeOneOffEvent(first.id)}>отметить первое выполненным</button>
+      <button onClick={() => completeOneOffEvent('event-2')}>отметить выполненным event-2</button>
+      <button onClick={() => completeOneOffEvent('event-нет')}>
+        отметить выполненным несуществующее
+      </button>
+      <button onClick={() => removeOneOffEvent(first.id)}>удалить первое событие</button>
+      <button onClick={() => removeOneOffEvent('event-нет')}>удалить несуществующее событие</button>
+    </div>
+  )
+}
+
+describe('Стор разовых событий (тикет 07)', () => {
+  function renderProbe() {
+    const repo = new InMemoryRepository()
+    repo.save(sampleAppState())
+    render(
+      <StoreProvider repository={repo}>
+        <OneOffEventProbe />
+      </StoreProvider>,
+    )
+    return repo
+  }
+
+  it('addOneOffEvent создаёт предстоящее событие (done: false)', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить событие' }))
+
+    const created = repo.load().oneOffEvents.find((event) => event.title === 'Стрижка')
+    expect(created).toStrictEqual({
+      id: expect.any(String) as string,
+      subjectId: 'subject-1',
+      title: 'Стрижка',
+      date: '2026-12-01',
+      done: false,
+    })
+    // Прежние события не тронуты.
+    expect(repo.load().oneOffEvents).toHaveLength(3)
+  })
+
+  it('addOneOffEvent обрезает пробелы заметки по краям', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить событие с заметкой' }))
+
+    const created = repo.load().oneOffEvents.find((event) => event.title === 'Укол')
+    expect(created!.note).toBe('Анадин')
+  })
+
+  it('addOneOffEvent с пустой после trim заметкой — поля note нет совсем', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить событие с пустой заметкой' }))
+
+    const created = repo.load().oneOffEvents.find((event) => event.title === 'Чипирование')
+    expect('note' in created!).toBe(false)
+  })
+
+  it('addOneOffEvent чужому подопечному — no-op, состояние не меняется', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить событие чужому подопечному' }))
+
+    expect(repo.load()).toBe(before)
+  })
+
+  it('updateOneOffEvent патчит заголовок, не трогая дату и заметку', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'переименовать первое событие' }))
+
+    const updated = repo.load().oneOffEvents[0]
+    expect(updated.title).toBe('Осмотр')
+    expect(updated.date).toBe('2026-11-05')
+    expect(updated.note).toBe('Осмотр перед вакцинацией')
+  })
+
+  it('updateOneOffEvent переносит дату', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'перенести первое событие' }))
+
+    expect(repo.load().oneOffEvents[0].date).toBe('2026-11-20')
+  })
+
+  it('updateOneOffEvent: note null и пустая строка снимают поле заметки', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'убрать заметку первого' }))
+    expect('note' in repo.load().oneOffEvents[0]!).toBe(false)
+
+    // Заметка возвращается патчем со строкой и снова снимается пустой.
+    fireEvent.click(screen.getByRole('button', { name: 'заменить заметку первого на пустую' }))
+    expect('note' in repo.load().oneOffEvents[0]!).toBe(false)
+  })
+
+  it('updateOneOffEvent несуществующего — no-op', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'изменить несуществующее событие' }))
+
+    expect(repo.load()).toBe(before)
+  })
+
+  it('completeOneOffEvent ставит done: true — событие уходит из предстоящих', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'отметить первое выполненным' }))
+
+    expect(repo.load().oneOffEvents[0].done).toBe(true)
+  })
+
+  it('completeOneOffEvent уже выполненного — no-op', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'отметить выполненным event-2' }))
+
+    expect(repo.load()).toBe(before)
+  })
+
+  it('completeOneOffEvent несуществующего — no-op', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'отметить выполненным несуществующее' }))
+
+    expect(repo.load()).toBe(before)
+  })
+
+  it('removeOneOffEvent удаляет только своё событие', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'удалить первое событие' }))
+
+    expect(repo.load().oneOffEvents.map((event) => event.id)).toStrictEqual(['event-2'])
+  })
+
+  it('removeOneOffEvent несуществующего — no-op', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'удалить несуществующее событие' }))
+
+    expect(repo.load()).toBe(before)
+  })
+})

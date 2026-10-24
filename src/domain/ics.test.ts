@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { CareItem, DateString, IntervalUnit } from './model'
-import { careItemCalendar } from './ics'
+import type { CareItem, DateString, IntervalUnit, OneOffEvent } from './model'
+import { careItemCalendar, oneOffEventCalendar } from './ics'
 
 /**
  * UID и DTSTAMP в проде выдаёт app-слой (crypto.randomUUID и UTC-время);
@@ -46,7 +46,10 @@ function referenceVcalendar(rrule: string): string {
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR',
-  ].join('\r\n')
+  ]
+    .join('\r\n')
+    // финальный CRLF обязателен по RFC 5545 §3.4 — эталон закрепляет и его
+    .concat('\r\n')
 }
 
 describe('эталонные VCALENDAR по единицам интервала (ADR-0004)', () => {
@@ -97,6 +100,72 @@ describe('folding длинных строк по октетам UTF-8 (RFC 5545 
     expect(out).toContain('SUMMARY:Профилактическая обработка от клеще\r\n й и блох — Барсик\r\n')
     // несвёрнутая строка не встречается нигде
     expect(out).not.toContain('от клещей и')
+  })
+})
+
+describe('одиночный VEVENT разового события (тикет 07)', () => {
+  /** Визит к ветеринару Барсика 5 ноября — как event-1 в фикстуре testState. */
+  function vetVisit(date: DateString = '2026-11-05'): OneOffEvent {
+    return { id: 'event-1', subjectId: 'subject-1', title: 'Визит к ветеринару', date, done: false }
+  }
+
+  it('эталон: DTSTART из даты события, без RRULE, VALARM за сутки', () => {
+    const expected = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//pet-care-tracker//Питомцы и дом//RU',
+      'CALSCALE:GREGORIAN',
+      'BEGIN:VEVENT',
+      `UID:${UID}`,
+      `DTSTAMP:${DTSTAMP}`,
+      'DTSTART;VALUE=DATE:20261105',
+      'SUMMARY:Визит к ветеринару — Барсик',
+      'BEGIN:VALARM',
+      'TRIGGER:-P1D',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Напоминание',
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ]
+      .join('\r\n')
+      .concat('\r\n')
+    expect(
+      oneOffEventCalendar({ event: vetVisit(), subjectName: 'Барсик', uid: UID, dtStamp: DTSTAMP }),
+    ).toBe(expected)
+  })
+
+  it('заметка события не попадает в SUMMARY — только заголовок и питомец', () => {
+    const out = oneOffEventCalendar({
+      event: { ...vetVisit(), note: 'Осмотр перед вакцинацией' },
+      subjectName: 'Барсик',
+      uid: UID,
+      dtStamp: DTSTAMP,
+    })
+    expect(out).toContain('SUMMARY:Визит к ветеринару — Барсик\r\n')
+    expect(out).not.toContain('Осмотр')
+  })
+
+  it('DTSTAMP не в формате YYYYMMDDTHHMMSSZ → RangeError', () => {
+    expect(() =>
+      oneOffEventCalendar({
+        event: vetVisit(),
+        subjectName: 'Барсик',
+        uid: UID,
+        dtStamp: '2026-10-24T18:30:00Z',
+      }),
+    ).toThrow(RangeError)
+  })
+
+  it('несуществующая дата события → RangeError', () => {
+    expect(() =>
+      oneOffEventCalendar({
+        event: vetVisit('2026-02-30'),
+        subjectName: 'Барсик',
+        uid: UID,
+        dtStamp: DTSTAMP,
+      }),
+    ).toThrow(RangeError)
   })
 })
 

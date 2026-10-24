@@ -5,7 +5,7 @@
  * «сегодня» приходит параметром — функции чистые, без Date и DOM.
  */
 
-import type { CareItem, CompletionLogEntry, DateString } from './model'
+import type { CareItem, CompletionLogEntry, DateString, OneOffEvent } from './model'
 import { daysUntil, nextDue } from './dates'
 
 /** Классификация пункта по nextDue: overdue — красный, soon — жёлтый, calm — серый. */
@@ -88,4 +88,80 @@ export function mostUrgent(
 ): CareItemDue | null {
   const sorted = sortTodoList(withUrgency(items, log, today), today)
   return sorted.length > 0 ? sorted[0] : null
+}
+
+/** Разовое событие с вычисленной срочностью — то, что рисуют строки событий. */
+export interface OneOffEventDue {
+  event: OneOffEvent
+  urgency: Urgency
+}
+
+/**
+ * Срочность разового события по его дате. Выполненные — calm: в списках
+ * дел их больше нет, они ушли в историю. Дата прошла — overdue;
+ * 0..SOON_WINDOW_DAYS — soon; дальше — calm.
+ */
+export function eventUrgency(event: OneOffEvent, today: DateString): Urgency {
+  if (event.done) return 'calm'
+  const days = daysUntil(today, event.date)
+  if (days < 0) return 'overdue'
+  if (days <= SOON_WINDOW_DAYS) return 'soon'
+  return 'calm'
+}
+
+/**
+ * Предстоящие разовые события по возрастанию даты: первым — самое близкое
+ * (тикет 07). Выполненные не возвращаются — их место в истории. Порядок
+ * даты-строки лексикографический = хронологический ('YYYY-MM-DD').
+ */
+export function upcomingEvents(
+  events: readonly OneOffEvent[],
+  today: DateString,
+): OneOffEventDue[] {
+  return events
+    .filter((event) => !event.done)
+    .map((event) => ({ event, urgency: eventUrgency(event, today) }))
+    .sort((a, b) => (a.event.date < b.event.date ? -1 : a.event.date > b.event.date ? 1 : 0))
+}
+
+/**
+ * Строка общего списка дел дашборда: пункт ухода или разовое событие
+ * (тикет 07). Дискриминант kind — единственное, что различает строки;
+ * срочность есть у обеих разновидностей.
+ */
+export type TodoEntry =
+  | ({ kind: 'careItem' } & CareItemDue)
+  | { kind: 'oneOffEvent'; event: OneOffEvent; urgency: Urgency }
+
+/** Ключ даты строки: «следующий раз» пункта (пустой журнал — сегодня) или дата события. */
+function entryDate(entry: TodoEntry, today: DateString): DateString {
+  return entry.kind === 'careItem' ? entry.nextDue ?? today : entry.event.date
+}
+
+/**
+ * Общий список дел дашборда: пункты ухода и предстоящие разовые события
+ * (тикет 07) в одном порядке — сначала срочность, внутри группы — дата,
+ * «пора сейчас» стоит после строгих просрочек (ключ — сегодня). Выполненные
+ * события не входят; calm-строки возвращаются — показывать их или нет,
+ * решает экран. Чистая функция: вход не изменяется.
+ */
+export function dashboardTodoList(
+  items: readonly CareItem[],
+  log: readonly CompletionLogEntry[],
+  events: readonly OneOffEvent[],
+  today: DateString,
+): TodoEntry[] {
+  const entries: TodoEntry[] = [
+    ...withUrgency(items, log, today).map<TodoEntry>((due) => ({ kind: 'careItem', ...due })),
+    ...upcomingEvents(events, today).map<TodoEntry>((due) => ({ kind: 'oneOffEvent', ...due })),
+  ]
+  return entries.sort(
+    (a, b) =>
+      rank(a.urgency) - rank(b.urgency) ||
+      (entryDate(a, today) < entryDate(b, today)
+        ? -1
+        : entryDate(a, today) > entryDate(b, today)
+          ? 1
+          : 0),
+  )
 }

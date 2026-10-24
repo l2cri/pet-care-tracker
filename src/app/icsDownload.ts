@@ -1,13 +1,14 @@
 /**
- * Скачивание .ics-календаря пункта ухода (тикет 06, ADR-0004, глоссарий:
- * «Экспорт .ics»). Вся строка VCALENDAR и её валидация — в domain/ics;
- * здесь только app-обёртка: сборка входа генератора (uid, DTSTAMP, старт)
- * и Blob-механика браузера. Компонент зовёт downloadCareItemCalendar с
- * готовыми данными пункта — в JSX не появляется ни строки логики.
+ * Скачивание .ics-календарей: пункта ухода (тикет 06) и разового события
+ * (тикет 07) — ADR-0004, глоссарий: «Экспорт .ics». Вся строка VCALENDAR и
+ * её валидация — в domain/ics; здесь только app-обёртка: сборка входа
+ * генератора (uid, DTSTAMP, старт) и Blob-механика браузера. Компонент
+ * зовёт downloadCareItemCalendar / downloadOneOffEventCalendar с готовыми
+ * данными — в JSX не появляется ни строки логики.
  */
 
-import type { CareItem, DateString } from '../domain/model'
-import { careItemCalendar } from '../domain/ics'
+import type { CareItem, DateString, OneOffEvent } from '../domain/model'
+import { careItemCalendar, oneOffEventCalendar } from '../domain/ics'
 
 /** Символы, запрещённые в именах файлов: заголовок пункта — свободный текст. */
 const UNSAFE_FILENAME_CHARS = /[\\/:*?"<>|]/g
@@ -76,6 +77,32 @@ export function downloadCareItemCalendar(input: CareItemCalendarDownload): void 
   })
   downloadTextFile(
     icsFileName(input.item.title, input.subjectName),
+    calendar,
+    'text/calendar;charset=utf-8',
+  )
+}
+
+/** Готовые данные разового события для выгрузки; дата старта — его же дата. */
+export interface OneOffEventCalendarDownload {
+  /** Разовое событие: заголовок и дата уходят в ядро (SUMMARY, DTSTART). */
+  event: OneOffEvent
+  /** Имя подопечного (CareSubject.name) — в SUMMARY и в имя файла. */
+  subjectName: string
+}
+
+/**
+ * Один клик → скачан одиночный «{событие} — {питомец}.ics» (тикет 07).
+ * Строку строит ядро (oneOffEventCalendar); uid и DTSTAMP — только здесь.
+ */
+export function downloadOneOffEventCalendar(input: OneOffEventCalendarDownload): void {
+  const calendar = oneOffEventCalendar({
+    event: input.event,
+    subjectName: input.subjectName,
+    uid: crypto.randomUUID(),
+    dtStamp: utcStamp(new Date()),
+  })
+  downloadTextFile(
+    icsFileName(input.event.title, input.subjectName),
     calendar,
     'text/calendar;charset=utf-8',
   )

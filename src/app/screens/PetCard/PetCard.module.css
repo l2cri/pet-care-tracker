@@ -187,6 +187,107 @@
   cursor: pointer;
 }
 
+/* Разовые события (тикет 07): секция после пунктов ухода, с воздухом
+   сверху — не сливается со списком повторяющегося ухода. */
+.events {
+  margin-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.eventsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.eventsTitle {
+  margin: 0;
+  font-size: var(--font-size-l);
+  line-height: var(--line-height);
+}
+
+.eventsHeadActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.eventsEmpty {
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-m);
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.eventCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+.eventHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.eventTitle {
+  margin: 0;
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+}
+
+.eventDate {
+  margin: 0;
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
+}
+
+/* Таймер события — те же токены срочности, что у CareTimer. */
+.eventTimer {
+  font-size: var(--font-size-m);
+  font-weight: 600;
+  line-height: var(--line-height);
+}
+
+.eventTimer.overdue {
+  color: var(--color-urgency-overdue);
+}
+
+.eventTimer.soon {
+  color: var(--color-urgency-soon);
+}
+
+.eventTimer.calm {
+  color: var(--color-text-muted);
+}
+
+.eventNote {
+  margin: 0;
+  font-size: var(--font-size-s);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
 /* Пустое состояние вкладки ухода */
 .empty {
   padding: var(--space-6) var(--space-4);
@@ -194,7 +295,6 @@
   border-radius: var(--radius-l);
   text-align: center;
 }
-
 .emptyTitle {
   margin: 0 0 var(--space-3);
   font-size: var(--font-size-l);
