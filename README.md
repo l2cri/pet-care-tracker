@@ -14,17 +14,17 @@
 - [Решения (ADR)](docs/adr/) — журнал архитектурных решений
 - [Тикеты](tickets/README.md) — доска задач с зависимостями
 - [Команда](docs/AGENTS.md) — чартер субагентов и владение тикетами
-- [Workflow](docs/WORKFLOW.md) — worktree + сессия на тикет + MR в GitLab со сквошем
+- [Workflow](docs/WORKFLOW.md) — worktree + сессия на тикет + PR в GitHub со сквошем
 
 ## Стек
 
-React + TypeScript + Vite. Без UI-библиотек, без чартовых библиотек, без роутера. Графики — самописный SVG. Тесты — Vitest на чистое доменное ядро. Репозиторий и CI — GitLab, деплой — GitLab Pages.
+React + TypeScript + Vite. Без UI-библиотек, без чартовых библиотек, без роутера. Графики — самописный SVG. Тесты — Vitest на чистое доменное ядро. Репозиторий: [github.com/l2cri/pet-care-tracker](https://github.com/l2cri/pet-care-tracker). CI — GitHub Actions, деплой — GitHub Pages.
 
 ## Разработка
 
 Один тикет = одна сессия ZCode = отдельный git worktree = ветка `t/NN-slog`. Готовый
-тикет проходит ревью-сессию `code-review` и уходит MR-ом в GitLab; **сливает в master
-человек — кнопкой Merge со включённым squash** (один коммит на тикет). Подробности —
+тикет проходит ревью-сессию `code-review` и уходит PR-ом в GitHub; **сливает в master
+человек — кнопкой «Squash and merge»** (один коммит на тикет). Подробности —
 в [docs/WORKFLOW.md](docs/WORKFLOW.md).
 
 ## Дорожная карта
