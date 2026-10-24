@@ -1,0 +1,241 @@
+/* Экран карточки питомца: шапка с возвратом, вкладки, контент. Токены —
+   из tokens.css; мобильный-first от 360px, безопасные зоны учтены. */
+
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+/* Шапка: возврат слева, имя и вид рядом — до вкладок одна смысловая строка. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: calc(var(--safe-top) + var(--space-3)) var(--space-4) var(--space-3);
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.back {
+  flex: none;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  margin-left: calc(var(--space-1) * -1);
+  border: none;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: var(--font-size-m);
+  cursor: pointer;
+}
+
+.heading {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-l);
+  line-height: var(--line-height);
+}
+
+.species {
+  margin: 0;
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
+}
+
+/* Вкладки: равные доли ширины, активная подчёркнута акцентом. */
+.tabs {
+  display: flex;
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--space-2);
+}
+
+.tab {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-m);
+  cursor: pointer;
+}
+
+.tabActive {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Запас снизу над жестовой полоской: под FAB не должна прятаться карточка. */
+.content {
+  flex: 1;
+  padding: var(--space-4) var(--space-4) calc(var(--safe-bottom) + 96px);
+}
+
+/* Список пунктов ухода */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.careCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+.careHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.careTitle {
+  margin: 0;
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+}
+
+.careInterval {
+  margin: 0;
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
+}
+
+/* Кнопки пункта: «Сделано» — залитая акцентом (главное действие вкладки),
+   остальные — лёгкие, удаление намечено цветом, как на карточке дашборда. */
+.careActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.doneButton {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-m);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.minorButton {
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-s);
+  cursor: pointer;
+}
+
+.removeButton {
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--color-danger);
+  font: inherit;
+  font-size: var(--font-size-s);
+  cursor: pointer;
+}
+
+/* Пустое состояние вкладки ухода */
+.empty {
+  padding: var(--space-6) var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-l);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-l);
+}
+
+.emptyText {
+  max-width: 34ch;
+  margin: 0 auto var(--space-4);
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+.emptyButton {
+  min-height: 48px;
+  padding: 0 var(--space-6);
+  border: none;
+  border-radius: var(--radius-m);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Заглушки вкладок «Вес» и «Корм» (тикет 08–09) */
+.stub {
+  padding: var(--space-6) var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-l);
+  text-align: center;
+}
+
+.stubTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-l);
+}
+
+.stubText {
+  margin: 0;
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+/* FAB — та же фиксированная точка входа «добавить», что на дашборде. */
+.fab {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--safe-bottom) + var(--space-4));
+  z-index: 10;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: inherit;
+  font-size: var(--font-size-xl);
+  line-height: 1;
+  box-shadow: var(--shadow-fab);
+  cursor: pointer;
+}
