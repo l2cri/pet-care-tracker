@@ -43,5 +43,5 @@
 
 | # | Статус |
 |---|---|
-| 01 | in-progress |
+| 01 | done |
 | 02–11 | ready-for-agent |
