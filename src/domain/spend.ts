@@ -66,3 +66,75 @@ export function monthlySpend(feed: readonly FeedEntry[], today: DateString, mont
   }
   return bins
 }
+
+/** Размеры рамки столбиков в координатах viewBox (ADR-0005: «данные + viewBox → геометрия»). */
+export interface BarsLayout {
+  /** Ширина слота одного месяца; все слоты равны. */
+  slotWidth: number
+  /** Толщина столбика внутри слота. */
+  barWidth: number
+  /** Отступ сверху под подпись суммы. */
+  topPad: number
+  /** Высота области построения; базовая линия оси = topPad + plotHeight. */
+  plotHeight: number
+  /** Минимальная видимая высота ненулевого столбика на фоне гиганта. */
+  minBarHeight: number
+}
+
+/** Один столбик: готовые координаты для <rect> и подписей, сумма для текста. */
+export interface BarGeometry {
+  monthKey: string
+  /** Центр слота — по нему выровнены столбик и подписи. */
+  x: number
+  /** Y верхней кромки столбика; при total 0 совпадает с baseline. */
+  top: number
+  /** Высота столбика: 0 — месяца без покупок, столбика нет. */
+  height: number
+  total: number
+}
+
+/** Рисунок целиком: столбики плюс общие для всего SVG ширина и базовая линия. */
+export interface BarsGeometry {
+  bars: BarGeometry[]
+  /** Ширина рисунка: по слоту на месяц. */
+  width: number
+  /** Y базовой линии оси. */
+  baseline: number
+}
+
+function assertValidLayout(layout: BarsLayout): void {
+  const values = [layout.slotWidth, layout.barWidth, layout.topPad, layout.plotHeight, layout.minBarHeight]
+  if (!values.every((value) => Number.isFinite(value) && value > 0)) {
+    throw new RangeError(`Размеры рамки должны быть положительными числами: ${JSON.stringify(layout)}`)
+  }
+  if (layout.barWidth > layout.slotWidth) {
+    throw new RangeError(`Столбик шире слота: barWidth ${layout.barWidth} > slotWidth ${layout.slotWidth}`)
+  }
+}
+
+/**
+ * Геометрия столбиков расходов (ADR-0005): корзины monthlySpend + рамка
+ * viewBox → готовые координаты. Автоскейл по максимуму окна с защитой
+ * max(total, 1) — окно из одних нулей не делит на ноль, нулевые месяцы
+ * дают height 0 (честная пустая позиция), крохотная ненулевая сумма на
+ * фоне гиганта клампится к minBarHeight. Компонент только рендерит.
+ */
+export function barsGeometry(months: readonly MonthSpend[], layout: BarsLayout): BarsGeometry {
+  assertValidLayout(layout)
+  const baseline = layout.topPad + layout.plotHeight
+  const maxTotal = Math.max(...months.map((month) => month.total), 1)
+  const bars = months.map((month, index) => {
+    const height =
+      month.total <= 0
+        ? 0
+        : Math.max((month.total / maxTotal) * layout.plotHeight, layout.minBarHeight)
+    return {
+      monthKey: month.monthKey,
+      x: index * layout.slotWidth + layout.slotWidth / 2,
+      top: baseline - height,
+      height,
+      total: month.total,
+    }
+  })
+  return { bars, width: months.length * layout.slotWidth, baseline }
+}

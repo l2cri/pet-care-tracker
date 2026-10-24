@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { FeedEntry } from './model'
-import { monthlySpend } from './spend'
+import { barsGeometry, monthlySpend } from './spend'
 
 /** Минимальная запись корма для агрегации: дата и цена, остальные поля — константы. */
 function feed(date: string, price: number): FeedEntry {
@@ -123,5 +123,51 @@ describe('monthlySpend: monthCount', () => {
     expect(() => monthlySpend([], '2026-10-15', 0)).toThrow(RangeError)
     expect(() => monthlySpend([], '2026-10-15', -2)).toThrow(RangeError)
     expect(() => monthlySpend([], '2026-10-15', 2.5)).toThrow(RangeError)
+  })
+})
+
+/** Компактная рамка для тестов геометрии: числа подобраны под простые пропорции. */
+const LAYOUT = { slotWidth: 50, barWidth: 30, topPad: 10, plotHeight: 100, minBarHeight: 2 }
+
+/** Корзины без агрегации — геометрии достаточно monthKey/total. */
+function bins(totals: number[]): ReturnType<typeof monthlySpend> {
+  return totals.map((total, index) => ({ monthKey: `2026-${String(index + 5).padStart(2, '0')}`, total }))
+}
+
+describe('barsGeometry: геометрия столбиков (ADR-0005)', () => {
+  it('высоты пропорциональны максимуму окна, координаты — по слотам', () => {
+    const geometry = barsGeometry(bins([1000, 500, 0]), LAYOUT)
+    expect(geometry.width).toBe(150) // 3 слота × 50
+    expect(geometry.baseline).toBe(110) // topPad + plotHeight
+    expect(geometry.bars).toEqual([
+      { monthKey: '2026-05', x: 25, top: 10, height: 100, total: 1000 },
+      { monthKey: '2026-06', x: 75, top: 60, height: 50, total: 500 },
+      { monthKey: '2026-07', x: 125, top: 110, height: 0, total: 0 },
+    ])
+  })
+
+  it('окно из одних нулей не делит на ноль: все высоты 0', () => {
+    const geometry = barsGeometry(bins([0, 0, 0, 0]), LAYOUT)
+    expect(geometry.bars.every((bar) => bar.height === 0 && bar.top === geometry.baseline)).toBe(true)
+  })
+
+  it('крохотная сумма на фоне гиганта клампится к minBarHeight', () => {
+    const geometry = barsGeometry(bins([1, 10000]), LAYOUT)
+    expect(geometry.bars[0]!.height).toBe(2)
+    expect(geometry.bars[0]!.top).toBe(108) // baseline − minBarHeight
+    expect(geometry.bars[1]!.height).toBe(100)
+  })
+
+  it('пустой список — пустой рисунок, viewBox не схлопывается', () => {
+    const geometry = barsGeometry([], LAYOUT)
+    expect(geometry.bars).toEqual([])
+    expect(geometry.width).toBe(0)
+    expect(geometry.baseline).toBe(110)
+  })
+
+  it('некорректная рамка бросает RangeError', () => {
+    expect(() => barsGeometry(bins([1]), { ...LAYOUT, slotWidth: 0 })).toThrow(RangeError)
+    expect(() => barsGeometry(bins([1]), { ...LAYOUT, plotHeight: -5 })).toThrow(RangeError)
+    expect(() => barsGeometry(bins([1]), { ...LAYOUT, barWidth: 51 })).toThrow(RangeError)
   })
 })
