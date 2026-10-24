@@ -21,6 +21,7 @@ import type {
   DateString,
   Id,
   Interval,
+  OneOffEvent,
 } from '../domain/model'
 import type { CareItemDraft } from '../domain/presets'
 import type { Repository } from '../storage/repository'
@@ -62,6 +63,23 @@ export type CareItemPatch = {
   interval?: Interval
 }
 
+/** Данные для создания разового события (тикет 07). */
+export interface NewOneOffEventInput {
+  title: string
+  date: DateString
+  note?: string
+}
+
+/**
+ * Частичный апдейт разового события: применяются только переданные поля.
+ * note: null — убрать заметку (полем, как фото подопечного), undefined — не трогать.
+ */
+export type OneOffEventPatch = {
+  title?: string
+  date?: DateString
+  note?: string | null
+}
+
 /** Экшены стора: стабильные между рендерами функции. */
 export interface StoreActions {
   /** Создаёт подопечного и его пункты ухода одним dispatch; возвращает созданного подопечного. */
@@ -80,6 +98,16 @@ export interface StoreActions {
    * (ADR-0003). «Следующий раз» пересчитается сам — он выводный.
    */
   logCompletion(careItemId: Id, date: DateString, note?: string): void
+  /** Создаёт разовое событие у подопечного; возвращает созданное событие (тикет 07). */
+  addOneOffEvent(subjectId: Id, input: NewOneOffEventInput): OneOffEvent
+  updateOneOffEvent(id: Id, patch: OneOffEventPatch): void
+  /** Удаляет разовое событие; выполненные и предстоящие удаляются одинаково. */
+  removeOneOffEvent(id: Id): void
+  /**
+   * «Сделано» разового события: ставит флаг done — событие уходит из
+   * предстоящих в историю. Отмены нет: выполненное — факт, как запись журнала.
+   */
+  completeOneOffEvent(id: Id): void
 }
 
 /** Значение контекста: состояние и экшены одним объектом. */
@@ -98,6 +126,10 @@ type StoreAction =
   | { type: 'careItem/update'; id: Id; patch: CareItemPatch }
   | { type: 'careItem/remove'; id: Id }
   | { type: 'completion/log'; entry: CompletionLogEntry }
+  | { type: 'oneOffEvent/add'; event: OneOffEvent }
+  | { type: 'oneOffEvent/update'; id: Id; patch: OneOffEventPatch }
+  | { type: 'oneOffEvent/remove'; id: Id }
+  | { type: 'oneOffEvent/complete'; id: Id }
 
 /** Чистый редьюсер: новые массивы и объекты, прежнее состояние не трогается. */
 function reducer(state: AppState, action: StoreAction): AppState {
@@ -171,6 +203,44 @@ function reducer(state: AppState, action: StoreAction): AppState {
       if (!state.careItems.some((item) => item.id === action.entry.careItemId)) return state
       return { ...state, completionLog: [...state.completionLog, action.entry] }
     }
+    case 'oneOffEvent/add':
+      // Событие без подопечного — сирота, как запись журнала без пункта: no-op.
+      if (!state.subjects.some((subject) => subject.id === action.event.subjectId)) return state
+      return { ...state, oneOffEvents: [...state.oneOffEvents, action.event] }
+    case 'oneOffEvent/update': {
+      const index = state.oneOffEvents.findIndex((event) => event.id === action.id)
+      if (index === -1) return state
+      const next: OneOffEvent = { ...state.oneOffEvents[index] }
+      const { title, date, note } = action.patch
+      if (title !== undefined) next.title = title
+      if (date !== undefined) next.date = date
+      // Заметка снимается именно удалением поля (как фото); пустая после
+      // trim строка трактуется как «заметки нет».
+      if (note === null) delete next.note
+      else if (note !== undefined) {
+        const trimmed = note.trim()
+        if (trimmed === '') delete next.note
+        else next.note = trimmed
+      }
+      const oneOffEvents = [...state.oneOffEvents]
+      oneOffEvents[index] = next
+      return { ...state, oneOffEvents }
+    }
+    case 'oneOffEvent/remove':
+      if (!state.oneOffEvents.some((event) => event.id === action.id)) return state
+      return {
+        ...state,
+        oneOffEvents: state.oneOffEvents.filter((event) => event.id !== action.id),
+      }
+    case 'oneOffEvent/complete': {
+      const index = state.oneOffEvents.findIndex((event) => event.id === action.id)
+      // Повторное «Сделано» выполненного и несуществующий id — no-op:
+      // та же ссылка состояния, автосейв не дёргается.
+      if (index === -1 || state.oneOffEvents[index].done) return state
+      const oneOffEvents = [...state.oneOffEvents]
+      oneOffEvents[index] = { ...oneOffEvents[index], done: true }
+      return { ...state, oneOffEvents }
+    }
   }
 }
 
@@ -241,6 +311,28 @@ export function StoreProvider(props: { children: ReactNode; repository: Reposito
           ...(trimmed ? { note: trimmed } : {}),
         }
         dispatch({ type: 'completion/log', entry })
+      },
+      addOneOffEvent(subjectId, input) {
+        const trimmedNote = input.note?.trim()
+        const event: OneOffEvent = {
+          id: crypto.randomUUID(),
+          subjectId,
+          title: input.title.trim(),
+          date: input.date,
+          done: false,
+          ...(trimmedNote ? { note: trimmedNote } : {}),
+        }
+        dispatch({ type: 'oneOffEvent/add', event })
+        return event
+      },
+      updateOneOffEvent(id, patch) {
+        dispatch({ type: 'oneOffEvent/update', id, patch })
+      },
+      removeOneOffEvent(id) {
+        dispatch({ type: 'oneOffEvent/remove', id })
+      },
+      completeOneOffEvent(id) {
+        dispatch({ type: 'oneOffEvent/complete', id })
       },
     }),
     // dispatch стабилен между рендерами — экшены не пересоздаются и не
