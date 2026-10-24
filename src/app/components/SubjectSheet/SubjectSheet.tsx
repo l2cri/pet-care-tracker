@@ -16,6 +16,7 @@ import { presetCareItemDrafts } from '../../../domain/presets'
 import { intervalLabel, UNIT_OPTIONS } from '../format'
 import { useStore } from '../../store'
 import { BottomSheet } from '../BottomSheet/BottomSheet'
+import form from '../form.module.css'
 import { PhotoInput } from '../PhotoInput/PhotoInput'
 import styles from './SubjectSheet.module.css'
 
@@ -129,45 +130,45 @@ export function SubjectSheet(props: SubjectSheetProps): ReactElement {
 
   return (
     <BottomSheet title={editing ? 'Изменить питомца' : 'Новый питомец'} onClose={onClose}>
-      <form className={styles.form} onSubmit={handleSubmit} noValidate>
-        <label className={styles.field}>
-          <span className={styles.label}>Имя</span>
+      <form className={form.form} onSubmit={handleSubmit} noValidate>
+        <label className={form.field}>
+          <span className={form.label}>Имя</span>
           <input
-            className={errors.name !== undefined ? `${styles.input} ${styles.inputInvalid}` : styles.input}
+            className={errors.name !== undefined ? `${form.input} ${form.inputInvalid}` : form.input}
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Барсик"
             aria-invalid={errors.name !== undefined}
           />
-          {errors.name !== undefined && <span className={styles.error}>{errors.name}</span>}
+          {errors.name !== undefined && <span className={form.error}>{errors.name}</span>}
         </label>
 
-        <label className={styles.field}>
-          <span className={styles.label}>Вид</span>
+        <label className={form.field}>
+          <span className={form.label}>Вид</span>
           <input
-            className={errors.species !== undefined ? `${styles.input} ${styles.inputInvalid}` : styles.input}
+            className={errors.species !== undefined ? `${form.input} ${form.inputInvalid}` : form.input}
             value={species}
             onChange={(event) => setSpecies(event.target.value)}
             placeholder="кот, собака…"
             aria-invalid={errors.species !== undefined}
           />
-          {errors.species !== undefined && <span className={styles.error}>{errors.species}</span>}
+          {errors.species !== undefined && <span className={form.error}>{errors.species}</span>}
         </label>
 
-        <label className={styles.field}>
-          <span className={styles.label}>Дата рождения</span>
+        <label className={form.field}>
+          <span className={form.label}>Дата рождения</span>
           <input
             type="date"
-            className={errors.birthDate !== undefined ? `${styles.input} ${styles.inputInvalid}` : styles.input}
+            className={errors.birthDate !== undefined ? `${form.input} ${form.inputInvalid}` : form.input}
             value={birthDate}
             onChange={(event) => setBirthDate(event.target.value)}
             aria-invalid={errors.birthDate !== undefined}
           />
-          {errors.birthDate !== undefined && <span className={styles.error}>{errors.birthDate}</span>}
+          {errors.birthDate !== undefined && <span className={form.error}>{errors.birthDate}</span>}
         </label>
 
-        <div className={styles.field}>
-          <span className={styles.label}>Фото</span>
+        <div className={form.field}>
+          <span className={form.label}>Фото</span>
           <PhotoInput value={photo} onChange={handlePhotoChange} />
         </div>
 
@@ -190,7 +191,7 @@ export function SubjectSheet(props: SubjectSheetProps): ReactElement {
                     <li key={index} className={styles.careRow}>
                       <div className={styles.careRowTop}>
                         <input
-                          className={styles.input}
+                          className={form.input}
                           value={row.title}
                           onChange={(event) => patchRow(index, { title: event.target.value })}
                           placeholder="Например, стрижка когтей"
@@ -206,21 +207,21 @@ export function SubjectSheet(props: SubjectSheetProps): ReactElement {
                           ✕
                         </button>
                       </div>
-                      <div className={styles.careInterval}>
-                        <span className={styles.every}>каждые</span>
+                      <div className={form.intervalRow}>
+                        <span className={form.intervalWord}>каждые</span>
                         <input
                           type="number"
                           min={1}
                           step={1}
                           inputMode="numeric"
-                          className={`${styles.input} ${styles.careValue}`}
+                          className={`${form.input} ${form.intervalValue}`}
                           value={row.valueText}
                           onChange={(event) => patchRow(index, { valueText: event.target.value })}
                           aria-label={`Интервал пункта ухода ${index + 1}: число`}
                           aria-invalid={rowError !== undefined}
                         />
                         <select
-                          className={styles.input}
+                          className={form.input}
                           value={row.unit}
                           onChange={(event) => patchRow(index, { unit: event.target.value as IntervalUnit })}
                           aria-label={`Единица интервала пункта ухода ${index + 1}`}
@@ -232,8 +233,8 @@ export function SubjectSheet(props: SubjectSheetProps): ReactElement {
                           ))}
                         </select>
                       </div>
-                      {hint !== null && <p className={styles.careSummary}>{hint}</p>}
-                      {rowError !== undefined && <span className={styles.error}>{rowError}</span>}
+                      {hint !== null && <p className={form.hint}>{hint}</p>}
+                      {rowError !== undefined && <span className={form.error}>{rowError}</span>}
                     </li>
                   )
                 })}
@@ -245,11 +246,11 @@ export function SubjectSheet(props: SubjectSheetProps): ReactElement {
           </section>
         )}
 
-        <div className={styles.actions}>
-          <button type="button" className={styles.secondary} onClick={onClose}>
+        <div className={form.actions}>
+          <button type="button" className={form.secondary} onClick={onClose}>
             Отмена
           </button>
-          <button type="submit" className={styles.primary}>
+          <button type="submit" className={form.primary}>
             Сохранить
           </button>
         </div>
