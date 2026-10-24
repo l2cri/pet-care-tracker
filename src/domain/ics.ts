@@ -13,7 +13,7 @@
  * veventLines без rrule — уже одиночный VEVENT.
  */
 
-import type { CareItem, DateString, Interval, IntervalUnit } from './model'
+import type { CareItem, DateString, Interval, IntervalUnit, OneOffEvent } from './model'
 import { parseDate } from './dates'
 
 /** Вход генератора календаря пункта ухода (тикет 06). */
@@ -179,6 +179,40 @@ export function careItemCalendar(input: CareItemCalendarInput): string {
       start: input.start,
       summary: `${input.item.title} — ${input.subjectName}`,
       rrule: rruleFromInterval(input.item.interval),
+    }),
+  )
+}
+
+/** Вход генератора календаря разового события (тикет 07). */
+export interface OneOffEventCalendarInput {
+  /** Разовое событие: заголовок идёт в SUMMARY, дата — в DTSTART. */
+  event: OneOffEvent
+  /** Имя подопечного (CareSubject.name) — вторая половина SUMMARY. */
+  subjectName: string
+  /** UID события; app-слой выдаёт crypto.randomUUID() (как в model.ts). */
+  uid: string
+  /** Метка создания 'YYYYMMDDTHHMMSSZ' (UTC); строку формирует вызывающий. */
+  dtStamp: string
+}
+
+/**
+ * VCALENDAR одиночного all-day события разового дела (тикет 07, ADR-0004):
+ * DTSTART — дата события, RRULE нет, VALARM за сутки. SUMMARY — «{заголовок}
+ * — {питомец}». Флаг done не влияет на выгрузку: экспортировать можно и
+ * предстоящее, и выполненное (перенос в календарь задним числом). Бросает
+ * RangeError на несуществующей дате события и DTSTAMP не по формату.
+ */
+export function oneOffEventCalendar(input: OneOffEventCalendarInput): string {
+  if (!DTSTAMP_RE.test(input.dtStamp)) {
+    throw new RangeError(`Некорректный DTSTAMP (ожидался 'YYYYMMDDTHHMMSSZ'): ${input.dtStamp}`)
+  }
+  return vcalendar(
+    veventLines({
+      uid: input.uid,
+      dtStamp: input.dtStamp,
+      start: input.event.date,
+      summary: `${input.event.title} — ${input.subjectName}`,
+      // rrule не передаётся — veventLines без него даёт одиночный VEVENT
     }),
   )
 }
