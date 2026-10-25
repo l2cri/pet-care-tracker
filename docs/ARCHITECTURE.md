@@ -42,6 +42,9 @@ src/
                           #   (конверт общий с localStorage)
   app/
     store.tsx             #   context + useReducer + автосохранение в репозиторий
+    today.ts, icsDownload.ts, backupDownload.ts, downloadTextFile.ts
+                          #   app-обёртки системных возможностей: «сегодня»,
+                          #   скачивание .ics и JSON-бэкапа (Blob-механика общая)
     screens/
       Dashboard/          #   карточки подопечных + общий список «просрочено/скоро»
       PetCard/            #   вкладки Уход / Вес / Корм
