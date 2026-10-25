@@ -1,0 +1,64 @@
+/*
+  График веса (тикет 08, ADR-0005): чистый SVG, все цвета и размеры шрифта —
+  переменные токенов, поэтому тёмная тема подхватывается сама (ADR-0006).
+  Холст тянется на ширину карточки, высота — пропорционально viewBox.
+*/
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-family);
+  /* Тапы по точкам — без задержки двойного зума мобильного браузера. */
+  touch-action: manipulation;
+}
+
+/* Ось X — тихая граница шкалы, не главный элемент. */
+.axis {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.axisLabel {
+  fill: var(--color-text-muted);
+  font-size: var(--font-size-s);
+}
+
+/* Линия тренда — акцент приложения; концы скруглены, изломы не колют глаз. */
+.line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Точка замера: заливка фона карточки + обводка акцентом — видна на линии
+   в обеих темах. Выбранная заливается акцентом целиком. */
+.point {
+  fill: var(--color-card);
+  stroke: var(--color-accent);
+  stroke-width: 2;
+}
+
+.pointSelected {
+  fill: var(--color-accent);
+}
+
+/* Слой приёма тапов поверх всего холста: прозрачная заливка ловит
+   pointer-события (fill: none их бы прошёл), курсор подсказывает тапабельность. */
+.hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+/* Тултип — инверсия палитры (фон — цвет текста, текст — цвет фона):
+   плашка читается и над линией, и над пустой областью в обеих темах. */
+.tooltip rect {
+  fill: var(--color-text);
+}
+
+.tooltip text {
+  fill: var(--color-bg);
+  font-size: var(--font-size-s);
+}

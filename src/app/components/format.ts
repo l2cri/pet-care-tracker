@@ -121,3 +121,18 @@ export function timerTextShort(days: number | null): string {
   if (days === 1) return 'завтра'
   return `через ${days} дн.`
 }
+
+/**
+ * Целые граммы → килограммы для вывода (тикет 08): 4000 → «4 кг»,
+ * 4100 → «4,1 кг», 4250 → «4,25 кг», 4055 → «4,055 кг». Арифметика только
+ * целочисленная (глоссарий «Замер веса»): килограммы — Math.floor, остаток —
+ * %, дробь — строка срезанными хвостовыми нулями, поэтому float-погрешности
+ * в весе не появляются никогда. Разделитель — запятая, как в русском вводе.
+ */
+export function formatKg(grams: number): string {
+  const kg = Math.floor(grams / 1000)
+  const remainder = grams % 1000
+  if (remainder === 0) return `${kg} кг`
+  const fraction = String(remainder).padStart(3, '0').replace(/0+$/, '')
+  return `${kg},${fraction} кг`
+}

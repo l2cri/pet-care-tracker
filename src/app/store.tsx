@@ -24,6 +24,7 @@ import type {
   Id,
   Interval,
   OneOffEvent,
+  WeightEntry,
 } from '../domain/model'
 import type { CareItemDraft } from '../domain/presets'
 import type { Repository } from '../storage/repository'
@@ -82,6 +83,13 @@ export type OneOffEventPatch = {
   note?: string | null
 }
 
+/** Данные замера веса (тикет 08): дата и целые граммы (ADR-0008). */
+export interface NewWeightEntryInput {
+  date: DateString
+  /** Целое число граммов; килограммы — только поле ввода формы, конвертация до стора. */
+  grams: number
+}
+
 /** Данные для создания записи корма (тикет 09). */
 export interface NewFeedEntryInput {
   date: DateString
@@ -131,6 +139,10 @@ export interface StoreActions {
    * предстоящих в историю. Отмены нет: выполненное — факт, как запись журнала.
    */
   completeOneOffEvent(id: Id): void
+  /** Добавляет замер веса подопечному; возвращает созданный замер (тикет 08). */
+  addWeight(subjectId: Id, input: NewWeightEntryInput): WeightEntry
+  /** Удаляет замер веса; правки замера нет — ошибочный удаляется и вводится заново. */
+  removeWeight(id: Id): void
   /** Создаёт запись корма у подопечного; возвращает созданную запись (тикет 09). */
   addFeedEntry(subjectId: Id, input: NewFeedEntryInput): FeedEntry
   updateFeedEntry(id: Id, patch: FeedEntryPatch): void
@@ -158,6 +170,8 @@ type StoreAction =
   | { type: 'oneOffEvent/update'; id: Id; patch: OneOffEventPatch }
   | { type: 'oneOffEvent/remove'; id: Id }
   | { type: 'oneOffEvent/complete'; id: Id }
+  | { type: 'weight/add'; entry: WeightEntry }
+  | { type: 'weight/remove'; id: Id }
   | { type: 'feed/add'; entry: FeedEntry }
   | { type: 'feed/update'; id: Id; patch: FeedEntryPatch }
   | { type: 'feed/remove'; id: Id }
@@ -272,6 +286,13 @@ function reducer(state: AppState, action: StoreAction): AppState {
       oneOffEvents[index] = { ...oneOffEvents[index], done: true }
       return { ...state, oneOffEvents }
     }
+    case 'weight/add':
+      // Замер без подопечного — сирота, как событие и запись журнала: no-op.
+      if (!state.subjects.some((subject) => subject.id === action.entry.subjectId)) return state
+      return { ...state, weights: [...state.weights, action.entry] }
+    case 'weight/remove':
+      if (!state.weights.some((entry) => entry.id === action.id)) return state
+      return { ...state, weights: state.weights.filter((entry) => entry.id !== action.id) }
     case 'feed/add':
       // Запись без подопечного — сирота, как событие и запись журнала: no-op.
       if (!state.subjects.some((subject) => subject.id === action.entry.subjectId)) return state
@@ -392,6 +413,21 @@ export function StoreProvider(props: { children: ReactNode; repository: Reposito
       },
       completeOneOffEvent(id) {
         dispatch({ type: 'oneOffEvent/complete', id })
+      },
+      addWeight(subjectId, input) {
+        // Граммы приходят уже целыми: форма конвертирует килограммы до стора
+        // (ADR-0008), стор раскладывает готовую сущность, ничего не считая.
+        const entry: WeightEntry = {
+          id: crypto.randomUUID(),
+          subjectId,
+          date: input.date,
+          grams: input.grams,
+        }
+        dispatch({ type: 'weight/add', entry })
+        return entry
+      },
+      removeWeight(id) {
+        dispatch({ type: 'weight/remove', id })
       },
       addFeedEntry(subjectId, input) {
         const trimmedNote = input.note?.trim()

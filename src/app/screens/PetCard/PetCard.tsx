@@ -1,24 +1,28 @@
 /**
  * Карточка питомца (глоссарий: PetCard) — второй экран приложения с вкладками
- * Уход / Вес / Корм (User Stories 4–15, 28). Вкладка «Уход» — полный цикл
+ * Уход / Вес / Корм (User Stories 4–15, 20–25, 28). Вкладка «Уход» — полный цикл
  * пункта (таймер срочности, «Сделано» с заметкой, история, экспорт .ics
  * тикета 06, правка и удаление) и раздел разовых событий (тикет 07):
  * создание, предстоящие по дате, «Сделано», экспорт одиночным .ics,
- * выполненные — в истории. Корм — вкладка тикета 09 (журнал покупок с
- * вердиктами и столбики расходов); Вес — заглушка до тикета 08.
+ * выполненные — в истории. Вкладка «Вес» (тикет 08) — SVG-график за всю
+ * историю с тултипом по тапу и лента замеров с удалением. «Корм» — вкладка
+ * тикета 09 (журнал покупок с вердиктами и столбики расходов), её контент
+ * живёт в отдельном FeedTab.
  *
- * Компонент не считает ни дат, ни срочности: порядок и цвета дают функции
- * домена (withUrgency, sortTodoList, upcomingEvents), «сегодня» —
- * todayDateString(), мутации — экшены стора. Открытые bottom-sheet'ы
- * взаимно исключающие — локальное UI-состояние экрана.
+ * Компонент не считает ни дат, ни срочности, ни геометрии графиков: порядок
+ * и цвета дают функции домена (withUrgency, sortTodoList, upcomingEvents,
+ * weightLineChart), «сегодня» — todayDateString(), мутации — экшены стора.
+ * Сортировка замеров по строке даты — презентационная ('YYYY-MM-DD'
+ * лексикографически равна хронологии, как в HistorySheet). Открытые
+ * bottom-sheet'ы взаимно исключающие — локальное UI-состояние экрана.
  */
 
 import { useState } from 'react'
 import type { ReactElement } from 'react'
-import type { CareItem, Id, OneOffEvent } from '../../../domain/model'
+import type { CareItem, Id, OneOffEvent, WeightEntry } from '../../../domain/model'
 import { daysUntil } from '../../../domain/dates'
 import { sortTodoList, upcomingEvents, withUrgency } from '../../../domain/urgency'
-import { formatDate, intervalLabel, timerText } from '../../components/format'
+import { formatDate, formatKg, intervalLabel, timerText } from '../../components/format'
 import { BottomSheet } from '../../components/BottomSheet/BottomSheet'
 import { CareItemSheet } from '../../components/CareItemSheet/CareItemSheet'
 import { CareTimer } from '../../components/CareTimer/CareTimer'
@@ -26,6 +30,8 @@ import { DoneEventsSheet } from '../../components/DoneEventsSheet/DoneEventsShee
 import { DoneSheet } from '../../components/DoneSheet/DoneSheet'
 import { HistorySheet } from '../../components/HistorySheet/HistorySheet'
 import { OneOffEventSheet } from '../../components/OneOffEventSheet/OneOffEventSheet'
+import { WeightChart } from '../../components/WeightChart/WeightChart'
+import { WeightSheet } from '../../components/WeightSheet/WeightSheet'
 import { FeedTab } from './FeedTab'
 import { todayDateString } from '../../today'
 import { downloadCareItemCalendar, downloadOneOffEventCalendar } from '../../icsDownload'
@@ -33,7 +39,7 @@ import { useStore } from '../../store'
 import form from '../../components/form.module.css'
 import styles from './PetCard.module.css'
 
-/** Вкладки карточки; «Вес» пока заглушка (тикет 08). */
+/** Вкладки карточки; заглушек больше нет — Вес (тикет 08) и Корм (тикет 09) живут своей вёрсткой. */
 type Tab = 'care' | 'weight' | 'feed'
 
 const TABS: { id: Tab; label: string }[] = [
@@ -49,7 +55,7 @@ export interface PetCardProps {
 
 export function PetCard(props: PetCardProps): ReactElement {
   const { subjectId, onBack } = props
-  const { state, removeCareItem, completeOneOffEvent, removeOneOffEvent } = useStore()
+  const { state, removeCareItem, completeOneOffEvent, removeOneOffEvent, removeWeight } = useStore()
   const subject = state.subjects.find((candidate) => candidate.id === subjectId)
 
   const [tab, setTab] = useState<Tab>('care')
@@ -65,6 +71,13 @@ export function PetCard(props: PetCardProps): ReactElement {
   const upcoming = upcomingEvents(events, today)
   const doneCount = events.length - upcoming.length
 
+  // Замеры веса этого подопечного (тикет 08), новые сверху — как история
+  // выполнений. Порядок презентационный: график пересортирует сам (ядро),
+  // списку нужна просто обратная лента.
+  const weightEntries = state.weights
+    .filter((entry) => entry.subjectId === subjectId)
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+
   // Взаимоисключающие листы: один на экране, как на дашборде.
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<CareItem | null>(null)
@@ -75,6 +88,8 @@ export function PetCard(props: PetCardProps): ReactElement {
   const [editingEvent, setEditingEvent] = useState<OneOffEvent | null>(null)
   const [removingEvent, setRemovingEvent] = useState<OneOffEvent | null>(null)
   const [showingDoneEvents, setShowingDoneEvents] = useState(false)
+  const [addingWeight, setAddingWeight] = useState(false)
+  const [removingWeight, setRemovingWeight] = useState<WeightEntry | null>(null)
 
   // Подопечный исчез из состояния, пока экран открыт (удалён из другого
   // места) — честная заглушка с выходом назад вместо белого экрана.
@@ -326,25 +341,58 @@ export function PetCard(props: PetCardProps): ReactElement {
           </>
         )}
 
-        {tab === 'weight' && (
-          <div className={styles.stub}>
-            <h2 className={styles.stubTitle}>График веса появится здесь</h2>
-            <p className={styles.stubText}>
-              Замеры и динамика за всю историю — в следующем обновлении.
-            </p>
-          </div>
-        )}
+        {tab === 'weight' &&
+          (weightEntries.length === 0 ? (
+            // Пустое состояние вкладки: что делать дальше (правило чартера).
+            <div className={styles.empty}>
+              <h2 className={styles.emptyTitle}>Замеров ещё нет</h2>
+              <p className={styles.emptyText}>
+                Записывайте вес питомца — график динамики за всю историю построится сам.
+              </p>
+              <button
+                type="button"
+                className={styles.emptyButton}
+                onClick={() => setAddingWeight(true)}
+              >
+                Добавить замер
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Геометрию считает ядро (weightLineChart): компонент только
+                  рендерит SVG и ловит тап по точке для тултипа (ADR-0005). */}
+              <div className={styles.weightChartCard}>
+                <WeightChart entries={weightEntries} />
+              </div>
+              <ul className={styles.weightList}>
+                {weightEntries.map((entry) => (
+                  <li key={entry.id} className={styles.weightEntry}>
+                    <span className={styles.weightDate}>{formatDate(entry.date)}</span>
+                    <span className={styles.weightValue}>{formatKg(entry.grams)}</span>
+                    <button
+                      type="button"
+                      className={styles.removeButton}
+                      onClick={() => setRemovingWeight(entry)}
+                    >
+                      Удалить
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ))}
 
         {tab === 'feed' && <FeedTab subjectId={subjectId} />}
       </main>
 
-      {/* FAB добавления пункта — только на вкладке ухода. */}
-      {tab === 'care' && (
+      {/* FAB добавления — на вкладках ухода (пункт) и веса (замер); подпись
+          и обработчик зависят от вкладки. */}
+      {(tab === 'care' || tab === 'weight') && (
         <button
           type="button"
           className={styles.fab}
-          onClick={() => setAdding(true)}
-          aria-label="Добавить пункт ухода"
+          onClick={() => (tab === 'care' ? setAdding(true) : setAddingWeight(true))}
+          aria-label={tab === 'care' ? 'Добавить пункт ухода' : 'Добавить замер'}
         >
           +
         </button>
@@ -366,6 +414,9 @@ export function PetCard(props: PetCardProps): ReactElement {
       )}
       {showingDoneEvents && (
         <DoneEventsSheet subjectId={subjectId} onClose={() => setShowingDoneEvents(false)} />
+      )}
+      {addingWeight && (
+        <WeightSheet subjectId={subjectId} onClose={() => setAddingWeight(false)} />
       )}
 
       {/* Удаление пункта уносит и историю выполнений — только через явное
@@ -418,6 +469,36 @@ export function PetCard(props: PetCardProps): ReactElement {
               onClick={() => {
                 removeOneOffEvent(removingEvent.id)
                 setRemovingEvent(null)
+              }}
+            >
+              Удалить
+            </button>
+          </div>
+        </BottomSheet>
+      )}
+
+      {/* Удаление замера — та же схема необратимых действий: правки замера
+          нет, ошибочный удаляется и вводится заново (контракт стора). */}
+      {removingWeight !== null && (
+        <BottomSheet title="Удалить замер?" onClose={() => setRemovingWeight(null)}>
+          <p className={form.note}>
+            Удалить замер {formatDate(removingWeight.date)}, {formatKg(removingWeight.grams)}?
+            Действие необратимо.
+          </p>
+          <div className={form.actions}>
+            <button
+              type="button"
+              className={form.secondary}
+              onClick={() => setRemovingWeight(null)}
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              className={form.danger}
+              onClick={() => {
+                removeWeight(removingWeight.id)
+                setRemovingWeight(null)
               }}
             >
               Удалить
