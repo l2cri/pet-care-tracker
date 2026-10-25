@@ -1,0 +1,35 @@
+/* Переключатели вердикта формы корма: два равных touch-friendly сегмента
+   (User Story 24). Невыбранный — контурный и приглушённый, выбранный
+   «Подошёл» — акцент, выбранный «Не подошёл» — опасный красный по токенам:
+   одна отметка, которую нельзя не заметить. */
+
+.verdictRow {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.verdictButton {
+  flex: 1;
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.verdictOkActive {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.verdictBadActive {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--color-on-danger);
+  font-weight: 600;
+}

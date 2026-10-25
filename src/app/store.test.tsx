@@ -385,6 +385,186 @@ describe('Стор пунктов ухода и журнала', () => {
 })
 
 /**
+ * Проба стора журнала корма (тикет 09): кнопки зовут публичные экшены.
+ * Первая запись фикстуры — feed-1 (subject-1, 2026-09-15, с заметкой);
+ * feed-2 принадлежит subject-2 — на нём видна точечность удаления.
+ */
+function FeedEntryProbe() {
+  const { state, addFeedEntry, updateFeedEntry, removeFeedEntry } = useStore()
+  const first = state.feed[0]
+  return (
+    <div>
+      <button
+        onClick={() =>
+          addFeedEntry('subject-1', { date: '2026-10-20', foodName: 'Purina One', price: 750, verdict: 'ok' })
+        }
+      >
+        добавить запись
+      </button>
+      <button
+        onClick={() =>
+          addFeedEntry('subject-1', {
+            date: '2026-10-21',
+            foodName: '  Grandorf  ',
+            price: 1200,
+            verdict: 'bad',
+            note: '  от него расстройство  ',
+          })
+        }
+      >
+        добавить запись с заметкой
+      </button>
+      <button
+        onClick={() =>
+          addFeedEntry('subject-1', { date: '2026-10-22', foodName: 'Acari', price: 300, verdict: 'ok', note: '   ' })
+        }
+      >
+        добавить запись с пустой заметкой
+      </button>
+      <button
+        onClick={() => addFeedEntry('subject-нет', { date: '2026-10-22', foodName: 'Сирота', price: 100, verdict: 'ok' })}
+      >
+        добавить запись чужому подопечному
+      </button>
+      <button onClick={() => updateFeedEntry(first.id, { foodName: 'Royal Canin Fit 32' })}>
+        переименовать первую запись
+      </button>
+      <button onClick={() => updateFeedEntry(first.id, { price: 950, verdict: 'bad' })}>
+        сменить цену и вердикт первой
+      </button>
+      <button onClick={() => updateFeedEntry(first.id, { note: null })}>убрать заметку первой</button>
+      <button onClick={() => updateFeedEntry(first.id, { note: '   ' })}>
+        заменить заметку первой на пустую
+      </button>
+      <button onClick={() => updateFeedEntry('feed-нет', { foodName: 'Никого' })}>
+        изменить несуществующую запись
+      </button>
+      <button onClick={() => removeFeedEntry(first.id)}>удалить первую запись</button>
+      <button onClick={() => removeFeedEntry('feed-нет')}>удалить несуществующую запись</button>
+    </div>
+  )
+}
+
+describe('Стор журнала корма (тикет 09)', () => {
+  function renderProbe() {
+    const repo = new InMemoryRepository()
+    repo.save(sampleAppState())
+    render(
+      <StoreProvider repository={repo}>
+        <FeedEntryProbe />
+      </StoreProvider>,
+    )
+    return repo
+  }
+
+  it('addFeedEntry создаёт запись у подопечного', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить запись' }))
+
+    const created = repo.load().feed.find((entry) => entry.foodName === 'Purina One')
+    expect(created).toStrictEqual({
+      id: expect.any(String) as string,
+      subjectId: 'subject-1',
+      date: '2026-10-20',
+      foodName: 'Purina One',
+      price: 750,
+      verdict: 'ok',
+    })
+    // Прежние записи не тронуты.
+    expect(repo.load().feed).toHaveLength(3)
+  })
+
+  it('addFeedEntry обрезает пробелы названия и заметки по краям', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить запись с заметкой' }))
+
+    const created = repo.load().feed.find((entry) => entry.foodName === 'Grandorf')
+    expect(created!.foodName).toBe('Grandorf')
+    expect(created!.note).toBe('от него расстройство')
+    expect(created!.verdict).toBe('bad')
+  })
+
+  it('addFeedEntry с пустой после trim заметкой — поля note нет совсем', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить запись с пустой заметкой' }))
+
+    const created = repo.load().feed.find((entry) => entry.foodName === 'Acari')
+    expect('note' in created!).toBe(false)
+  })
+
+  it('addFeedEntry чужому подопечному — no-op, состояние не меняется', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'добавить запись чужому подопечному' }))
+
+    expect(repo.load()).toBe(before)
+  })
+
+  it('updateFeedEntry патчит название, не трогая цену, вердикт и заметку', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'переименовать первую запись' }))
+
+    const updated = repo.load().feed[0]
+    expect(updated.foodName).toBe('Royal Canin Fit 32')
+    expect(updated.price).toBe(890.5)
+    expect(updated.verdict).toBe('ok')
+    expect(updated.note).toBe('ест охотно')
+  })
+
+  it('updateFeedEntry меняет цену и вердикт', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'сменить цену и вердикт первой' }))
+
+    const updated = repo.load().feed[0]
+    expect(updated.price).toBe(950)
+    expect(updated.verdict).toBe('bad')
+  })
+
+  it('updateFeedEntry: note null и пустая строка снимают поле заметки', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'убрать заметку первой' }))
+    expect('note' in repo.load().feed[0]!).toBe(false)
+
+    // Заметка возвращается патчем со строкой и снова снимается пустой.
+    fireEvent.click(screen.getByRole('button', { name: 'заменить заметку первой на пустую' }))
+    expect('note' in repo.load().feed[0]!).toBe(false)
+  })
+
+  it('updateFeedEntry несуществующей — no-op', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'изменить несуществующую запись' }))
+
+    expect(repo.load()).toBe(before)
+  })
+
+  it('removeFeedEntry удаляет только свою запись', () => {
+    const repo = renderProbe()
+
+    fireEvent.click(screen.getByRole('button', { name: 'удалить первую запись' }))
+
+    expect(repo.load().feed.map((entry) => entry.id)).toStrictEqual(['feed-2'])
+  })
+
+  it('removeFeedEntry несуществующей — no-op', () => {
+    const repo = renderProbe()
+    const before = repo.load()
+
+    fireEvent.click(screen.getByRole('button', { name: 'удалить несуществующую запись' }))
+
+    expect(repo.load()).toBe(before)
+  })
+})
+
+/**
  * Проба стора разовых событий (тикет 07): кнопки зовут публичные экшены.
  * Первое событие фикстуры — event-1 (subject-1, 2026-11-05, предстоящее,
  * с заметкой); event-2 уже выполнен — на нём виден no-op повтора.

@@ -4,7 +4,8 @@
  * пункта (таймер срочности, «Сделано» с заметкой, история, экспорт .ics
  * тикета 06, правка и удаление) и раздел разовых событий (тикет 07):
  * создание, предстоящие по дате, «Сделано», экспорт одиночным .ics,
- * выполненные — в истории. Вес и Корм — заглушки до тикетов 08–09.
+ * выполненные — в истории. Корм — вкладка тикета 09 (журнал покупок с
+ * вердиктами и столбики расходов); Вес — заглушка до тикета 08.
  *
  * Компонент не считает ни дат, ни срочности: порядок и цвета дают функции
  * домена (withUrgency, sortTodoList, upcomingEvents), «сегодня» —
@@ -25,13 +26,14 @@ import { DoneEventsSheet } from '../../components/DoneEventsSheet/DoneEventsShee
 import { DoneSheet } from '../../components/DoneSheet/DoneSheet'
 import { HistorySheet } from '../../components/HistorySheet/HistorySheet'
 import { OneOffEventSheet } from '../../components/OneOffEventSheet/OneOffEventSheet'
+import { FeedTab } from './FeedTab'
 import { todayDateString } from '../../today'
 import { downloadCareItemCalendar, downloadOneOffEventCalendar } from '../../icsDownload'
 import { useStore } from '../../store'
 import form from '../../components/form.module.css'
 import styles from './PetCard.module.css'
 
-/** Вкладки карточки; «Вес» и «Корм» пока заглушки (тикет 08–09). */
+/** Вкладки карточки; «Вес» пока заглушка (тикет 08). */
 type Tab = 'care' | 'weight' | 'feed'
 
 const TABS: { id: Tab; label: string }[] = [
@@ -333,14 +335,7 @@ export function PetCard(props: PetCardProps): ReactElement {
           </div>
         )}
 
-        {tab === 'feed' && (
-          <div className={styles.stub}>
-            <h2 className={styles.stubTitle}>Журнал корма появится здесь</h2>
-            <p className={styles.stubText}>
-              Покупки, цены и вердикт «подошёл / не подошёл» — в следующем обновлении.
-            </p>
-          </div>
-        )}
+        {tab === 'feed' && <FeedTab subjectId={subjectId} />}
       </main>
 
       {/* FAB добавления пункта — только на вкладке ухода. */}
