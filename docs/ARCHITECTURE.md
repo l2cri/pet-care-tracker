@@ -42,9 +42,13 @@ src/
                           #   (конверт общий с localStorage)
   app/
     store.tsx             #   context + useReducer + автосохранение в репозиторий
+    today.ts, icsDownload.ts, backupDownload.ts, downloadTextFile.ts
+                          #   app-обёртки системных возможностей: «сегодня»,
+                          #   скачивание .ics и JSON-бэкапа (Blob-механика общая)
     screens/
       Dashboard/          #   карточки подопечных + общий список «просрочено/скоро»
       PetCard/            #   вкладки Уход / Вес / Корм
+      Settings/           #   бэкап JSON в обе стороны, демо-набор, «Стереть всё»
     components/           #   PetCard, CareTimer, UrgencyBadge, BottomSheet,
                           #   WeightChart (SVG), SpendBars (SVG), IcsButton, PhotoInput
   styles/

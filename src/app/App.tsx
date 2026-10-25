@@ -3,6 +3,7 @@ import type { Id } from '../domain/model'
 import { createLocalStorageRepo } from '../storage/localStorageRepo'
 import { Dashboard } from './screens/Dashboard/Dashboard'
 import { PetCard } from './screens/PetCard/PetCard'
+import { Settings } from './screens/Settings/Settings'
 import { StoreProvider } from './store'
 
 /**
@@ -12,19 +13,32 @@ import { StoreProvider } from './store'
  * рендерами. Экраны берут данные только через useStore и не знают о
  * localStorage (docs/ARCHITECTURE.md).
  *
- * Два экрана без роутера (ADR-0006): какой питомец открыт — навигационное
- * состояние корня, id достаточно — сам питомец живёт в сторе.
+ * Три экрана без роутера (ADR-0006): какой питомец открыт и не открыт ли
+ * экран настроек — навигационное состояние корня, id достаточно — сам питомец
+ * живёт в сторе.
  */
+
+/** Навигационное состояние: дашборд / карточка питомца / настройки (тикет 10). */
+type Screen =
+  | { name: 'dashboard' }
+  | { name: 'petCard'; subjectId: Id }
+  | { name: 'settings' }
+
 export function App() {
   const [repository] = useState(createLocalStorageRepo)
-  const [openSubjectId, setOpenSubjectId] = useState<Id | null>(null)
+  const [screen, setScreen] = useState<Screen>({ name: 'dashboard' })
 
   return (
     <StoreProvider repository={repository}>
-      {openSubjectId === null ? (
-        <Dashboard onOpenSubject={setOpenSubjectId} />
+      {screen.name === 'dashboard' ? (
+        <Dashboard
+          onOpenSubject={(id) => setScreen({ name: 'petCard', subjectId: id })}
+          onOpenSettings={() => setScreen({ name: 'settings' })}
+        />
+      ) : screen.name === 'petCard' ? (
+        <PetCard subjectId={screen.subjectId} onBack={() => setScreen({ name: 'dashboard' })} />
       ) : (
-        <PetCard subjectId={openSubjectId} onBack={() => setOpenSubjectId(null)} />
+        <Settings onBack={() => setScreen({ name: 'dashboard' })} />
       )}
     </StoreProvider>
   )

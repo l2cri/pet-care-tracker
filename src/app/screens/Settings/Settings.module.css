@@ -1,0 +1,164 @@
+/*
+  Экран настроек (тикет 10): секции-карточки, в каждой — действия с короткими
+  пояснениями, что делает кнопка (не стена кнопок). Опасная зона визуально
+  отделена рамкой danger. Только токены tokens.css, мобильный-first от 360px,
+  тёмная тема — автоматом через переменные (ADR-0006).
+*/
+
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+/* Шапка — как у карточки питомца: возврат слева, заголовок рядом. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: calc(var(--safe-top) + var(--space-3)) var(--space-4) var(--space-3);
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.back {
+  flex: none;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  margin-left: calc(var(--space-1) * -1);
+  border: none;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: var(--font-size-m);
+  cursor: pointer;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-l);
+  line-height: var(--line-height);
+}
+
+/* Контент: колонка секций. Запас снизу — безопасная зона; FAB на этом
+   экране нет, 96px запаса дашборда не нужен. */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4) calc(var(--safe-bottom) + var(--space-6));
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-l);
+  line-height: var(--line-height);
+}
+
+.sectionText {
+  margin: 0;
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+/* Действие: кнопка на всю ширину плюс пояснение, что она делает. */
+.action {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  min-height: 48px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-m);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Выгрузка бэкапа — залитая акцентом: единственное поощряемое действие
+   экрана (совет «сначала выгрузите бэкап» дают и импорт, и демо, и стирание). */
+.primaryButton {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.secondaryButton {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+/* Стирание на экране — только намёк цветом (как «Удалить» на карточках):
+   залитая красная остаётся подтверждению в bottom-sheet. */
+.dangerButton {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-danger);
+}
+
+.actionHint {
+  margin: 0;
+  font-size: var(--font-size-s);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+/* Опасная зона: рамка danger отделяет необратимое от остального экрана. */
+.dangerSection {
+  border-color: var(--color-danger);
+}
+
+/* Служебный input выбора файла: невидим, но остаётся в потоке — клик по
+   видимой кнопке открывает пикер, iOS надёжно пропускает только такой
+   вариант (display:none отсекается некоторыми браузерами). */
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  border: 0;
+  padding: 0;
+  overflow: hidden;
+  clipping-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Итог импорта: успех — акцентом, ошибка — danger; оба читаются на карточке
+   в светлой и тёмной теме. */
+.notice {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-m);
+  background: var(--color-bg);
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+}
+
+.noticeSuccess {
+  color: var(--color-accent);
+}
+
+.noticeError {
+  color: var(--color-danger);
+}

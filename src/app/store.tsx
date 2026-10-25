@@ -148,6 +148,15 @@ export interface StoreActions {
   updateFeedEntry(id: Id, patch: FeedEntryPatch): void
   /** Удаляет запись корма; подтверждение — дело вызывающего экрана. */
   removeFeedEntry(id: Id): void
+  /**
+   * Полная замена состояния одним dispatch — единая точка для сценариев
+   * настроек (тикет 10): импорт JSON-бэкапа (parseImport уже провалидировал
+   * файл), загрузка демо-набора, «Стереть всё» (emptyAppState()). Стор
+   * доверяет готовому состоянию — валидация и построение лежат на
+   * вызывающем; UI получает данные только через стор, поэтому замена —
+   * экшен стора, а не прямой вызов репозитория.
+   */
+  replaceState(state: AppState): void
 }
 
 /** Значение контекста: состояние и экшены одним объектом. */
@@ -175,6 +184,7 @@ type StoreAction =
   | { type: 'feed/add'; entry: FeedEntry }
   | { type: 'feed/update'; id: Id; patch: FeedEntryPatch }
   | { type: 'feed/remove'; id: Id }
+  | { type: 'state/replace'; state: AppState }
 
 /** Чистый редьюсер: новые массивы и объекты, прежнее состояние не трогается. */
 function reducer(state: AppState, action: StoreAction): AppState {
@@ -321,6 +331,11 @@ function reducer(state: AppState, action: StoreAction): AppState {
     case 'feed/remove':
       if (!state.feed.some((entry) => entry.id === action.id)) return state
       return { ...state, feed: state.feed.filter((entry) => entry.id !== action.id) }
+    case 'state/replace':
+      // Ссылка переданного объекта: состояние иммутабельно по контракту,
+      // копировать не нужно. Валидацию стор не повторяет — экшен несёт
+      // уже готовое состояние (parseImport / домен / emptyAppState).
+      return action.state
   }
 }
 
@@ -448,6 +463,9 @@ export function StoreProvider(props: { children: ReactNode; repository: Reposito
       },
       removeFeedEntry(id) {
         dispatch({ type: 'feed/remove', id })
+      },
+      replaceState(state) {
+        dispatch({ type: 'state/replace', state })
       },
     }),
     // dispatch стабилен между рендерами — экшены не пересоздаются и не
