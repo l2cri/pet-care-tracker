@@ -19,6 +19,8 @@ import type {
   CareSubject,
   CompletionLogEntry,
   DateString,
+  FeedEntry,
+  FeedVerdict,
   Id,
   Interval,
   OneOffEvent,
@@ -88,6 +90,27 @@ export interface NewWeightEntryInput {
   grams: number
 }
 
+/** Данные для создания записи корма (тикет 09). */
+export interface NewFeedEntryInput {
+  date: DateString
+  foodName: string
+  price: number
+  verdict: FeedVerdict
+  note?: string
+}
+
+/**
+ * Частичный апдейт записи корма: применяются только переданные поля.
+ * note: null — убрать заметку, undefined — не трогать (как у событий).
+ */
+export type FeedEntryPatch = {
+  date?: DateString
+  foodName?: string
+  price?: number
+  verdict?: FeedVerdict
+  note?: string | null
+}
+
 /** Экшены стора: стабильные между рендерами функции. */
 export interface StoreActions {
   /** Создаёт подопечного и его пункты ухода одним dispatch; возвращает созданного подопечного. */
@@ -120,6 +143,11 @@ export interface StoreActions {
   addWeight(subjectId: Id, input: NewWeightEntryInput): WeightEntry
   /** Удаляет замер веса; правки замера нет — ошибочный удаляется и вводится заново. */
   removeWeight(id: Id): void
+  /** Создаёт запись корма у подопечного; возвращает созданную запись (тикет 09). */
+  addFeedEntry(subjectId: Id, input: NewFeedEntryInput): FeedEntry
+  updateFeedEntry(id: Id, patch: FeedEntryPatch): void
+  /** Удаляет запись корма; подтверждение — дело вызывающего экрана. */
+  removeFeedEntry(id: Id): void
 }
 
 /** Значение контекста: состояние и экшены одним объектом. */
@@ -144,6 +172,9 @@ type StoreAction =
   | { type: 'oneOffEvent/complete'; id: Id }
   | { type: 'weight/add'; entry: WeightEntry }
   | { type: 'weight/remove'; id: Id }
+  | { type: 'feed/add'; entry: FeedEntry }
+  | { type: 'feed/update'; id: Id; patch: FeedEntryPatch }
+  | { type: 'feed/remove'; id: Id }
 
 /** Чистый редьюсер: новые массивы и объекты, прежнее состояние не трогается. */
 function reducer(state: AppState, action: StoreAction): AppState {
@@ -262,6 +293,34 @@ function reducer(state: AppState, action: StoreAction): AppState {
     case 'weight/remove':
       if (!state.weights.some((entry) => entry.id === action.id)) return state
       return { ...state, weights: state.weights.filter((entry) => entry.id !== action.id) }
+    case 'feed/add':
+      // Запись без подопечного — сирота, как событие и запись журнала: no-op.
+      if (!state.subjects.some((subject) => subject.id === action.entry.subjectId)) return state
+      return { ...state, feed: [...state.feed, action.entry] }
+    case 'feed/update': {
+      const index = state.feed.findIndex((entry) => entry.id === action.id)
+      if (index === -1) return state
+      const next: FeedEntry = { ...state.feed[index] }
+      const { date, foodName, price, verdict, note } = action.patch
+      if (date !== undefined) next.date = date
+      if (foodName !== undefined) next.foodName = foodName
+      if (price !== undefined) next.price = price
+      if (verdict !== undefined) next.verdict = verdict
+      // Заметка снимается именно удалением поля (как у событий); пустая
+      // после trim строка трактуется как «заметки нет».
+      if (note === null) delete next.note
+      else if (note !== undefined) {
+        const trimmed = note.trim()
+        if (trimmed === '') delete next.note
+        else next.note = trimmed
+      }
+      const feed = [...state.feed]
+      feed[index] = next
+      return { ...state, feed }
+    }
+    case 'feed/remove':
+      if (!state.feed.some((entry) => entry.id === action.id)) return state
+      return { ...state, feed: state.feed.filter((entry) => entry.id !== action.id) }
   }
 }
 
@@ -369,6 +428,26 @@ export function StoreProvider(props: { children: ReactNode; repository: Reposito
       },
       removeWeight(id) {
         dispatch({ type: 'weight/remove', id })
+      },
+      addFeedEntry(subjectId, input) {
+        const trimmedNote = input.note?.trim()
+        const entry: FeedEntry = {
+          id: crypto.randomUUID(),
+          subjectId,
+          date: input.date,
+          foodName: input.foodName.trim(),
+          price: input.price,
+          verdict: input.verdict,
+          ...(trimmedNote ? { note: trimmedNote } : {}),
+        }
+        dispatch({ type: 'feed/add', entry })
+        return entry
+      },
+      updateFeedEntry(id, patch) {
+        dispatch({ type: 'feed/update', id, patch })
+      },
+      removeFeedEntry(id) {
+        dispatch({ type: 'feed/remove', id })
       },
     }),
     // dispatch стабилен между рендерами — экшены не пересоздаются и не

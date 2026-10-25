@@ -1,0 +1,205 @@
+/* Вкладка «Корм» карточки питомца: секция расходов, журнал покупок с
+   вердиктами и свой FAB (position: fixed — как в PetCard.module.css).
+   Только токены из tokens.css (ADR-0006); touch-friendly от 360px. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-l);
+  line-height: var(--line-height);
+}
+
+/* Карточка под графиком: SVG тянется на её ширину, внутренние поля —
+   воздух вокруг столбиков и подписей. */
+.chartCard {
+  padding: var(--space-4) var(--space-3) var(--space-2);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+/* Журнал — вторая смысловая секция, с воздухом сверху, как разовые события
+   в PetCard: не сливается с графиком. */
+.journal {
+  margin-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+/* Неподошедший корм: красная полоса слева без сдвига содержимого
+   (inset-тень, а не border-left) — плохая покупка ищется глазами мгновенно. */
+.cardBad {
+  box-shadow: inset 4px 0 0 var(--color-danger);
+}
+
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.foodName {
+  margin: 0;
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+}
+
+/* Вердикт-бейдж: «подошёл» — акцентный, «не подошёл» — опасный красный.
+   on-цвета токенов держат контраст в обеих темах. */
+.badge {
+  flex: none;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 999px;
+  font-size: var(--font-size-s);
+  font-weight: 600;
+  line-height: var(--line-height);
+}
+
+.badgeOk {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.badgeBad {
+  background: var(--color-danger);
+  color: var(--color-on-danger);
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.date {
+  font-size: var(--font-size-s);
+  color: var(--color-text-muted);
+}
+
+.price {
+  font-size: var(--font-size-m);
+  font-weight: 600;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--font-size-s);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+/* Действия записи: лёгкие кнопки, удаление намечено красным — как
+   minorButton/removeButton в PetCard. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.minorButton {
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-s);
+  cursor: pointer;
+}
+
+.removeButton {
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--color-danger);
+  font: inherit;
+  font-size: var(--font-size-s);
+  cursor: pointer;
+}
+
+/* Пустое состояние журнала */
+.empty {
+  padding: var(--space-6) var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-l);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-l);
+}
+
+.emptyText {
+  max-width: 34ch;
+  margin: 0 auto var(--space-4);
+  font-size: var(--font-size-m);
+  line-height: var(--line-height);
+  color: var(--color-text-muted);
+}
+
+.emptyButton {
+  min-height: 48px;
+  padding: 0 var(--space-6);
+  border: none;
+  border-radius: var(--radius-m);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* FAB — копия точки входа из PetCard.module.css: вкладка самодостаточна и
+   не тянет чужой модуль стилей. */
+.fab {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--safe-bottom) + var(--space-4));
+  z-index: 10;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: inherit;
+  font-size: var(--font-size-xl);
+  line-height: 1;
+  box-shadow: var(--shadow-fab);
+  cursor: pointer;
+}

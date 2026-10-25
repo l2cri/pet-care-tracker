@@ -1,12 +1,13 @@
 /**
  * Карточка питомца (глоссарий: PetCard) — второй экран приложения с вкладками
- * Уход / Вес / Корм (User Stories 4–15, 20–22, 28). Вкладка «Уход» — полный цикл
+ * Уход / Вес / Корм (User Stories 4–15, 20–25, 28). Вкладка «Уход» — полный цикл
  * пункта (таймер срочности, «Сделано» с заметкой, история, экспорт .ics
  * тикета 06, правка и удаление) и раздел разовых событий (тикет 07):
  * создание, предстоящие по дате, «Сделано», экспорт одиночным .ics,
  * выполненные — в истории. Вкладка «Вес» (тикет 08) — SVG-график за всю
- * историю с тултипом по тапу и лента замеров с удалением. Корм — заглушка
- * до тикета 09.
+ * историю с тултипом по тапу и лента замеров с удалением. «Корм» — вкладка
+ * тикета 09 (журнал покупок с вердиктами и столбики расходов), её контент
+ * живёт в отдельном FeedTab.
  *
  * Компонент не считает ни дат, ни срочности, ни геометрии графиков: порядок
  * и цвета дают функции домена (withUrgency, sortTodoList, upcomingEvents,
@@ -31,13 +32,14 @@ import { HistorySheet } from '../../components/HistorySheet/HistorySheet'
 import { OneOffEventSheet } from '../../components/OneOffEventSheet/OneOffEventSheet'
 import { WeightChart } from '../../components/WeightChart/WeightChart'
 import { WeightSheet } from '../../components/WeightSheet/WeightSheet'
+import { FeedTab } from './FeedTab'
 import { todayDateString } from '../../today'
 import { downloadCareItemCalendar, downloadOneOffEventCalendar } from '../../icsDownload'
 import { useStore } from '../../store'
 import form from '../../components/form.module.css'
 import styles from './PetCard.module.css'
 
-/** Вкладки карточки; «Корм» пока заглушка (тикет 09). */
+/** Вкладки карточки; заглушек больше нет — Вес (тикет 08) и Корм (тикет 09) живут своей вёрсткой. */
 type Tab = 'care' | 'weight' | 'feed'
 
 const TABS: { id: Tab; label: string }[] = [
@@ -380,14 +382,7 @@ export function PetCard(props: PetCardProps): ReactElement {
             </>
           ))}
 
-        {tab === 'feed' && (
-          <div className={styles.stub}>
-            <h2 className={styles.stubTitle}>Журнал корма появится здесь</h2>
-            <p className={styles.stubText}>
-              Покупки, цены и вердикт «подошёл / не подошёл» — в следующем обновлении.
-            </p>
-          </div>
-        )}
+        {tab === 'feed' && <FeedTab subjectId={subjectId} />}
       </main>
 
       {/* FAB добавления — на вкладках ухода (пункт) и веса (замер); подпись
