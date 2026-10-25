@@ -45,6 +45,7 @@ src/
     screens/
       Dashboard/          #   карточки подопечных + общий список «просрочено/скоро»
       PetCard/            #   вкладки Уход / Вес / Корм
+      Settings/           #   бэкап JSON в обе стороны, демо-набор, «Стереть всё»
     components/           #   PetCard, CareTimer, UrgencyBadge, BottomSheet,
                           #   WeightChart (SVG), SpendBars (SVG), IcsButton, PhotoInput
   styles/
