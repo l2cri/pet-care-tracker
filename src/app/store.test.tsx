@@ -835,3 +835,95 @@ describe('Стор замеров веса (тикет 08)', () => {
     expect(repo.load()).toBe(before)
   })
 })
+
+/**
+ * Состояние-замена для тикета 10: в каждой из шести коллекций — другая
+ * композиция записей, чем в sampleAppState(). Фабрика — из testState.ts,
+ * срезы выбирают по одной записи так, чтобы ни одна коллекция не совпала
+ * с исходной (субъект subject-1 исчезает при выжившем care-1 — сливать
+ * нечего, видна именно замена).
+ */
+function replacementAppState(): AppState {
+  const base = sampleAppState()
+  return {
+    subjects: base.subjects.slice(1), // subject-2
+    careItems: base.careItems.slice(0, 1), // care-1
+    completionLog: base.completionLog.slice(2), // log-3
+    oneOffEvents: base.oneOffEvents.slice(1), // event-2
+    weights: base.weights.slice(1), // weight-2
+    feed: base.feed.slice(1), // feed-2
+  }
+}
+
+/**
+ * Проба стора полной замены состояния (тикет 10): кнопки зовут публичные
+ * экшены настроек — замену готовым состоянием (импорт бэкапа / демо-набор)
+ * и «Стереть всё». Сводка id шести коллекций выводится в data-testid:
+ * UI получает данные только через стор.
+ */
+function ReplaceStateProbe({ replacement }: { replacement: AppState }) {
+  const { state, replaceState } = useStore()
+  const summary = [
+    state.subjects.map((subject) => subject.id),
+    state.careItems.map((item) => item.id),
+    state.completionLog.map((entry) => entry.id),
+    state.oneOffEvents.map((event) => event.id),
+    state.weights.map((entry) => entry.id),
+    state.feed.map((entry) => entry.id),
+  ]
+    .map((ids) => ids.join(','))
+    .join('|')
+  return (
+    <div>
+      <button onClick={() => replaceState(replacement)}>заменить состояние</button>
+      <button onClick={() => replaceState(emptyAppState())}>стереть всё</button>
+      <div data-testid="summary">{summary}</div>
+    </div>
+  )
+}
+
+describe('Стор полной замены состояния (тикет 10)', () => {
+  function renderProbe(replacement: AppState) {
+    const repo = new InMemoryRepository()
+    repo.save(sampleAppState())
+    render(
+      <StoreProvider repository={repo}>
+        <ReplaceStateProbe replacement={replacement} />
+      </StoreProvider>,
+    )
+    return repo
+  }
+
+  it('replaceState замещает все шесть коллекций — стор отдаёт состояние-замену', () => {
+    renderProbe(replacementAppState())
+
+    fireEvent.click(screen.getByRole('button', { name: 'заменить состояние' }))
+
+    // Каждая коллекция — ровно записи замены: прежних subject-1, care-2,
+    // care-3, log-1, event-1, weight-1, feed-1 нет, слияния не произошло.
+    expect(screen.getByTestId('summary').textContent).toBe(
+      'subject-2|care-1|log-3|event-2|weight-2|feed-2',
+    )
+  })
+
+  it('автосейв сохранил замену: InMemoryRepository.load() возвращает новое состояние', () => {
+    const replacement = replacementAppState()
+    const repo = renderProbe(replacement)
+
+    fireEvent.click(screen.getByRole('button', { name: 'заменить состояние' }))
+
+    // Мутация → автосейв → load даёт состояние-замену: репозиторий отдельного
+    // вызова не получал, useAutoSave записал замену как любое изменение.
+    expect(repo.load()).toStrictEqual(replacement)
+  })
+
+  it('replaceState(emptyAppState()) даёт состояние первого запуска', () => {
+    const repo = renderProbe(replacementAppState())
+
+    fireEvent.click(screen.getByRole('button', { name: 'стереть всё' }))
+
+    // Все шесть коллекций пусты — сводка из шести пустых сегментов.
+    expect(screen.getByTestId('summary').textContent).toBe('|||||')
+    expect(repo.load()).toStrictEqual(emptyAppState())
+  })
+})

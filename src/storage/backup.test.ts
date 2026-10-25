@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { demoData } from '../domain/demoData'
 import { CURRENT_FORMAT_VERSION, BackupImportError, exportJson, parseImport } from './backup'
 import { sampleAppState } from './testState'
 
@@ -39,6 +40,11 @@ describe('round-trip бэкапа', () => {
       formatVersion: CURRENT_FORMAT_VERSION,
       state: sampleAppState(),
     })
+  })
+
+  it('демо-набор проходит round-trip без потерь (тикет 10: демо выгружается бэкапом)', () => {
+    const demo = demoData('2026-10-25')
+    expect(parseImport(exportJson(demo))).toStrictEqual(demo)
   })
 })
 
