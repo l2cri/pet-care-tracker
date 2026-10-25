@@ -2,13 +2,14 @@
  * Скачивание .ics-календарей: пункта ухода (тикет 06) и разового события
  * (тикет 07) — ADR-0004, глоссарий: «Экспорт .ics». Вся строка VCALENDAR и
  * её валидация — в domain/ics; здесь только app-обёртка: сборка входа
- * генератора (uid, DTSTAMP, старт) и Blob-механика браузера. Компонент
+ * генератора (uid, DTSTAMP, старт) и общий downloadTextFile. Компонент
  * зовёт downloadCareItemCalendar / downloadOneOffEventCalendar с готовыми
  * данными — в JSX не появляется ни строки логики.
  */
 
 import type { CareItem, DateString, OneOffEvent } from '../domain/model'
 import { careItemCalendar, oneOffEventCalendar } from '../domain/ics'
+import { downloadTextFile } from './downloadTextFile'
 
 /** Символы, запрещённые в именах файлов: заголовок пункта — свободный текст. */
 const UNSAFE_FILENAME_CHARS = /[\\/:*?"<>|]/g
@@ -35,20 +36,6 @@ export function utcStamp(now: Date): string {
 /** DTSTART события: вычисленный nextDue; пустой журнал («пора сейчас») — «сегодня». */
 export function calendarStart(nextDue: DateString | null, today: DateString): DateString {
   return nextDue ?? today
-}
-
-/** Тонкая DOM-механика: Blob → временная ссылка → клик → revoke. Сервера нет (ADR-0004). */
-function downloadTextFile(fileName: string, text: string, type: string): void {
-  const blob = new Blob([text], { type })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  // Firefox кликает только ссылку в документе — она в DOM на один тик.
-  document.body.append(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
 }
 
 /** Готовые данные пункта, которых хватает на выгрузку; остальное — выводное. */
