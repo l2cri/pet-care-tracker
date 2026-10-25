@@ -112,13 +112,15 @@ describe('weightLineChart: нормализация замеров в геоме
     }
   })
 
-  it('неотсортированный вход → points по возрастанию даты', () => {
+  it('неотсортированный вход → points по возрастанию даты, id замеров при них', () => {
     const geometry = weightLineChart(
       [w('late', '2026-08-01', 4300), w('early', '2026-07-01', 4200), w('mid', '2026-07-11', 4250)],
       VB,
     )
     if (geometry === null) throw new Error('ожидалась геометрия для трёх замеров')
     expect(geometry.points.map((p) => p.date)).toEqual(['2026-07-01', '2026-07-11', '2026-08-01'])
+    // id приезжает с замером: рендер берёт его ключом, тултип — адресом выбора
+    expect(geometry.points.map((p) => p.id)).toEqual(['early', 'mid', 'late'])
     expect(geometry.xFirstDate).toBe('2026-07-01')
     expect(geometry.xLastDate).toBe('2026-08-01')
   })
@@ -135,9 +137,10 @@ describe('weightLineChart: нормализация замеров в геоме
     )
     if (geometry === null) throw new Error('ожидалась геометрия для четырёх замеров')
     // Оба замера 2026-07-11 на одном x = 24 + (10/31)·272; порядок входа не перевернулся:
-    // сначала heavy (4500), затем light (4000) — grams тут маркер личности записи.
+    // сначала heavy (4500), затем light (4000) — id при точках подтверждает порядок.
     expect(geometry.points[1].x).toBeCloseTo(geometry.points[2].x, 10)
     expect(geometry.points[1].x).toBeCloseTo(111.7419355, 6)
+    expect(geometry.points.map((p) => p.id)).toEqual(['first', 'heavy', 'light', 'later'])
     expect(geometry.points.map((p) => p.grams)).toEqual([4200, 4500, 4000, 4300])
     // и та же дата не сломала шкалу: min внизу, max вверху
     expect(geometry.points[1].y).toBe(24)

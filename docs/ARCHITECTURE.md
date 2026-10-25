@@ -30,7 +30,8 @@ src/
                           #   nextDue(item, log), daysUntil
     urgency.ts            #   классификация overdue / soon / calm, сортировки дашборда
     ics.ts                #   buildIcs(...) → строка VCALENDAR (RRULE, VALARM, folding)
-    charts.ts             #   normalize(points, viewBox) → геометрия линии/столбиков
+    charts.ts             #   weightLineChart(entries, viewBox) → геометрия линии
+                          #   (столбики расходов добавит тикет 09)
     presets.ts            #   пресеты ухода (прививки 12 мес, паразиты 3 мес, груминг 2 мес)
     demoData.ts           #   демо-набор: 2 питомца с историей
   storage/

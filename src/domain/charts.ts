@@ -28,6 +28,8 @@ export interface ViewBox {
 
 /** Замер и его точка в пикселях viewBox. */
 export interface WeightPointGeometry {
+  /** id замера: естественный ключ рендера и адрес тултипа. */
+  id: string
   date: DateString
   grams: number
   x: number
@@ -100,6 +102,7 @@ export function weightLineChart(
 
   return {
     points: sorted.map((entry) => ({
+      id: entry.id,
       date: entry.date,
       grams: entry.grams,
       x: xOf(entry.date),
